@@ -37,6 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'PrintEstimation.accounts',
+    'PrintEstimation.core',
+    'PrintEstimation.jobs',
+    'PrintEstimation.operations',
+
+
 ]
 
 MIDDLEWARE = [

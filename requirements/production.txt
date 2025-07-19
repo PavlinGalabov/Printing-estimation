@@ -1,0 +1,10 @@
+-r base.txt
+
+# Production server
+gunicorn>=21.2.0
+
+# Error monitoring (optional)
+sentry-sdk[django]>=1.32.0
+
+# Performance monitoring
+django-silk>=5.0.4

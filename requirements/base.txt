@@ -1,0 +1,24 @@
+# Core Django and database
+Django>=5.0,<5.1
+psycopg2-binary>=2.9.7
+python-decouple>=3.8
+
+# Forms and validation
+django-crispy-forms>=2.0
+crispy-bootstrap5>=0.7
+
+# Static files and media
+whitenoise>=6.5.0
+Pillow>=10.0.0
+
+# Date and time utilities
+python-dateutil>=2.8.2
+
+# Development utilities
+django-extensions>=3.2.3
+
+# Security
+django-ratelimit>=4.1.0
+
+# API (for future use)
+djangorestframework>=3.14.0
