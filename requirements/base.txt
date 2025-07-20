@@ -1,5 +1,5 @@
 # Core Django and database
-Django>=5.0,<5.1
+Django>=5.0,<5.3
 psycopg2-binary>=2.9.7
 python-decouple>=3.8
 
