@@ -32,7 +32,7 @@ class JobVariantInline(admin.TabularInline):
 class JobAdmin(admin.ModelAdmin):
     """Admin for Job model."""
     list_display = [
-        'job_number', 'client_name', 'order_type', 'quantity',
+        'job_number', 'client', 'order_type', 'quantity',
         'status', 'is_template', 'total_cost', 'created_at'
     ]
     list_filter = [
@@ -40,7 +40,7 @@ class JobAdmin(admin.ModelAdmin):
         'paper_type', 'printing_machine'
     ]
     search_fields = [
-        'job_number', 'client_name', 'order_name', 'template_name'
+        'job_number', 'client__company_name', 'order_name', 'template_name'
     ]
     ordering = ['-created_at']
     date_hierarchy = 'created_at'
@@ -50,7 +50,7 @@ class JobAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Job Information', {
             'fields': (
-                'job_number', 'client_name', 'order_type', 'order_name',
+                'job_number', 'client', 'order_type', 'order_name',
                 'quantity', 'status', 'notes'
             )
         }),
@@ -99,13 +99,11 @@ class JobAdmin(admin.ModelAdmin):
     def mark_as_sent(self, request, queryset):
         """Mark selected jobs as sent to client."""
         queryset.update(status='sent')
-
     mark_as_sent.short_description = "Mark as sent to client"
 
     def mark_as_approved(self, request, queryset):
         """Mark selected jobs as approved."""
         queryset.update(status='approved')
-
     mark_as_approved.short_description = "Mark as approved"
 
     def create_templates(self, request, queryset):
@@ -115,7 +113,6 @@ class JobAdmin(admin.ModelAdmin):
                 job.is_template = True
                 job.template_name = f"{job.order_type.title()} Template"
                 job.save()
-
     create_templates.short_description = "Convert to templates"
 
 

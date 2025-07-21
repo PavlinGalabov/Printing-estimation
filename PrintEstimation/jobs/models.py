@@ -41,7 +41,12 @@ class Job(models.Model):
 
     # Job identification
     job_number = models.CharField(max_length=20, unique=True, blank=True)
-    client_name = models.CharField(max_length=200)
+    client = models.ForeignKey(
+        'accounts.Client',
+        on_delete=models.PROTECT,
+        related_name='jobs',
+        help_text="Client for this job"
+    )
     order_type = models.CharField(max_length=20, choices=ORDER_TYPES)
     order_name = models.CharField(max_length=200)
 
@@ -213,7 +218,7 @@ class Job(models.Model):
     def __str__(self):
         if self.is_template:
             return f"Template: {self.template_name or self.order_name}"
-        return f"{self.job_number} - {self.client_name} ({self.order_name})"
+        return f"{self.job_number} - {self.client.company_name} ({self.order_name})"
 
     def get_absolute_url(self):
         return reverse('jobs:detail', kwargs={'pk': self.pk})
