@@ -1,12 +1,9 @@
 """
-Admin configuration for operations app.
+Admin configuration for operations app with simplified formula approach.
 """
 
 from django.contrib import admin
-from .models import (
-    OperationCategory, Operation, PaperType,
-    PaperSize, PrintingMachine
-)
+from .models import OperationCategory, Operation, PaperType, PaperSize
 
 
 @admin.register(OperationCategory)
@@ -20,34 +17,39 @@ class OperationCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Operation)
 class OperationAdmin(admin.ModelAdmin):
-    """Admin for Operation model."""
+    """Admin for Operation model with formula-based pricing."""
     list_display = [
-        'name', 'category', 'pricing_type', 'makeready_price',
-        'price_per_unit', 'is_active'
+        'name', 'category', 'makeready_price', 'price_per_sheet',
+        'uses_colors', 'is_active'
     ]
-    list_filter = ['category', 'pricing_type', 'is_active', 'requires_colors']
+    list_filter = ['category', 'uses_colors', 'is_active']
     search_fields = ['name', 'description']
     ordering = ['category__sort_order', 'name']
-    list_editable = ['makeready_price', 'price_per_unit', 'is_active']
+    list_editable = ['makeready_price', 'price_per_sheet', 'is_active']
 
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'category', 'description', 'pricing_type', 'is_active')
+            'fields': ('name', 'category', 'description', 'is_active')
         }),
-        ('Pricing', {
-            'fields': ('makeready_price', 'price_per_unit', 'outsourcing_rate'),
-            'description': 'Configure pricing based on the selected pricing type'
+        ('Cost Formula Constants', {
+            'fields': ('makeready_price', 'price_per_sheet', 'plate_price'),
+            'description': 'Constants used in cost calculation formulas'
         }),
-        ('Time Calculations', {
-            'fields': ('makeready_time_minutes', 'time_per_unit_seconds')
+        ('Waste Calculation', {
+            'fields': ('base_waste_sheets', 'waste_percentage'),
+            'description': 'Parameters for calculating waste sheets'
+        }),
+        ('Time Formula Constants', {
+            'fields': ('makeready_time_minutes', 'cleaning_time_minutes', 'sheets_per_minute'),
+            'description': 'Constants used in time calculation formulas'
         }),
         ('Quantity Effects', {
             'fields': ('divides_quantity_by', 'multiplies_quantity_by'),
-            'description': 'How this operation affects the quantity for subsequent operations'
+            'description': 'How this operation affects quantity for subsequent operations'
         }),
-        ('Advanced', {
-            'fields': ('requires_colors', 'custom_cost_formula', 'custom_time_formula'),
-            'classes': ('collapse',)
+        ('Operation Behavior', {
+            'fields': ('uses_colors', 'uses_front_colors_only'),
+            'description': 'How this operation interacts with color settings'
         })
     )
 
@@ -56,13 +58,11 @@ class OperationAdmin(admin.ModelAdmin):
     def activate_operations(self, request, queryset):
         """Activate selected operations."""
         queryset.update(is_active=True)
-
     activate_operations.short_description = "Activate selected operations"
 
     def deactivate_operations(self, request, queryset):
         """Deactivate selected operations."""
         queryset.update(is_active=False)
-
     deactivate_operations.short_description = "Deactivate selected operations"
 
 
@@ -88,18 +88,4 @@ class PaperSizeAdmin(admin.ModelAdmin):
     def area_cm2(self, obj):
         """Display area in cm²."""
         return f"{obj.area_cm2:.1f} cm²"
-
     area_cm2.short_description = "Area"
-
-
-@admin.register(PrintingMachine)
-class PrintingMachineAdmin(admin.ModelAdmin):
-    """Admin for PrintingMachine model."""
-    list_display = [
-        'name', 'max_paper_width_cm', 'max_paper_height_cm',
-        'max_colors', 'cost_per_hour', 'is_active'
-    ]
-    list_filter = ['is_active', 'max_colors']
-    search_fields = ['name']
-    ordering = ['name']
-    list_editable = ['cost_per_hour', 'is_active']

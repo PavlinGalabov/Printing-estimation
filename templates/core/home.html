@@ -1,0 +1,205 @@
+{% extends '../base.html' %}
+
+{% block title %}Home - Offset Printing Estimation System{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    {% if user.is_authenticated %}
+        <!-- Dashboard View for Authenticated Users -->
+        <div class="row">
+            <div class="col-12">
+                <h1 class="display-5 mb-4">
+                    Welcome back, {{ user.get_display_name }}!
+                </h1>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="row mb-5">
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Total Jobs</h5>
+                                <h2 class="mb-0">{{ total_jobs|default:0 }}</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-file-earmark-text fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Templates</h5>
+                                <h2 class="mb-0">{{ total_templates|default:0 }}</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-files fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Active Clients</h5>
+                                <h2 class="mb-0">{{ total_clients|default:0 }}</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-people fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="row">
+            <div class="col-12">
+                <h3 class="mb-3">Quick Actions</h3>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="{% url 'jobs:create' %}" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    New Job
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="{% url 'accounts:client_create' %}" class="btn btn-success btn-lg w-100">
+                    <i class="bi bi-person-plus me-2"></i>
+                    New Client
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="{% url 'jobs:templates' %}" class="btn btn-info btn-lg w-100">
+                    <i class="bi bi-files me-2"></i>
+                    Templates
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="{% url 'jobs:dashboard' %}" class="btn btn-outline-primary btn-lg w-100">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+        
+    {% else %}
+        <!-- Landing Page for Anonymous Users -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-4 mb-4">
+                    <i class="bi bi-printer text-primary me-3"></i>
+                    Professional Printing Estimation
+                </h1>
+                <p class="lead mb-5">
+                    Streamline your offset printing cost calculations with our comprehensive estimation system. 
+                    Real-time calculations, template management, and professional quote generation.
+                </p>
+                
+                <div class="row mb-5">
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="bi bi-calculator text-primary fs-1 mb-3"></i>
+                                <h5 class="card-title">Real-time Calculations</h5>
+                                <p class="card-text">Live cost updates as you modify job parameters. See immediate impact of every change.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="bi bi-files text-success fs-1 mb-3"></i>
+                                <h5 class="card-title">Template System</h5>
+                                <p class="card-text">Create reusable templates for common jobs. Speed up estimation with predefined settings.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="bi bi-graph-up text-info fs-1 mb-3"></i>
+                                <h5 class="card-title">Multi-Quantity Pricing</h5>
+                                <p class="card-text">Generate pricing for multiple quantities. Show volume discounts to win more business.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg me-md-2">
+                        <i class="bi bi-person-plus me-2"></i>
+                        Get Started
+                    </a>
+                    <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        Login
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="row mt-5 pt-5 border-top">
+            <div class="col-12 text-center mb-4">
+                <h2>Why Choose Our System?</h2>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Comprehensive Parameter Management</h5>
+                        <p>Handle all aspects of printing jobs: paper specifications, machine settings, color requirements, and special finishing options.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Professional Client Management</h5>
+                        <p>Maintain detailed client profiles with payment terms, contact information, and printing preferences.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Sequential Operation Tracking</h5>
+                        <p>Track how quantities and costs change through each printing operation step by step.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Role-Based Access Control</h5>
+                        <p>Secure system with different access levels for superusers, staff, and clients.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

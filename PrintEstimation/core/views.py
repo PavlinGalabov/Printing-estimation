@@ -12,7 +12,7 @@ class HomeView(TemplateView):
     """
     Home page view - public landing page.
     """
-    template_name = 'core/home.html'
+    template_name = "core/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

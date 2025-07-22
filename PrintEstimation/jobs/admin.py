@@ -13,7 +13,7 @@ class JobOperationInline(admin.TabularInline):
     readonly_fields = ['created_at']
     fields = [
         'sequence_order', 'operation', 'operation_name', 'quantity_before',
-        'quantity_after', 'material_cost', 'labor_cost', 'outsourcing_cost'
+        'quantity_after', 'total_cost', 'total_time_minutes'
     ]
 
 
@@ -23,8 +23,7 @@ class JobVariantInline(admin.TabularInline):
     extra = 0
     readonly_fields = ['created_at']
     fields = [
-        'quantity', 'total_material_cost', 'total_labor_cost',
-        'total_outsourcing_cost', 'total_time_minutes'
+        'quantity', 'total_cost', 'total_time_minutes'
     ]
 
 
@@ -37,7 +36,7 @@ class JobAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         'status', 'order_type', 'is_template', 'created_at',
-        'paper_type', 'printing_machine'
+        'paper_type'
     ]
     search_fields = [
         'job_number', 'client__company_name', 'order_name', 'template_name'
@@ -62,8 +61,7 @@ class JobAdmin(admin.ModelAdmin):
         }),
         ('Production Settings', {
             'fields': (
-                'n_up', 'printing_machine', 'colors_front', 'colors_back',
-                'special_colors'
+                'n_up', 'colors_front', 'colors_back', 'special_colors'
             )
         }),
         ('Book-Specific', {
@@ -123,8 +121,8 @@ class JobOperationAdmin(admin.ModelAdmin):
         'job', 'sequence_order', 'operation_name', 'quantity_before',
         'quantity_after', 'total_cost', 'total_time_minutes'
     ]
-    list_filter = ['operation', 'pricing_type']
-    search_fields = ['job__job_number', 'job__client_name', 'operation_name']
+    list_filter = ['operation']
+    search_fields = ['job__job_number', 'job__client__company_name', 'operation_name']
     ordering = ['job', 'sequence_order']
 
     readonly_fields = ['created_at']
@@ -137,7 +135,7 @@ class JobVariantAdmin(admin.ModelAdmin):
         'job', 'quantity', 'total_cost', 'cost_per_piece', 'total_time_minutes'
     ]
     list_filter = ['quantity']
-    search_fields = ['job__job_number', 'job__client_name']
+    search_fields = ['job__job_number', 'job__client__company_name']
     ordering = ['job', 'quantity']
 
     readonly_fields = ['created_at']

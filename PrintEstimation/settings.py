@@ -43,7 +43,9 @@ INSTALLED_APPS = [
     'PrintEstimation.jobs',
     'PrintEstimation.operations',
 
-
+    # Add django-crispy-forms and its template pack
+    'crispy_forms',
+    'crispy_bootstrap5',
 ]
 
 MIDDLEWARE = [
@@ -61,7 +63,7 @@ ROOT_URLCONF = 'PrintEstimation.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

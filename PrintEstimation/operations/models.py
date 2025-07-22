@@ -1,5 +1,6 @@
 """
-Models for printing operations and materials.
+Models for printing operations with simplified formula-based approach.
+Each operation contains its own constants and formulas.
 """
 
 from datetime import timedelta
@@ -32,57 +33,69 @@ class OperationCategory(models.Model):
 
 class Operation(models.Model):
     """
-    Master operations that can be used in job calculations.
+    Master operations with built-in formulas and constants.
+    Each operation is specific (e.g., "Color Printing Quarter Size").
     """
-    PRICING_TYPES = [
-        ('per_piece', 'Per Piece'),
-        ('per_weight', 'Per Weight (kg)'),
-        ('per_sheet', 'Per Sheet'),
-        ('per_color', 'Per Color'),
-        ('outsourcing', 'Outsourcing (Fixed Rate)'),
-        ('custom', 'Custom Formula'),
-    ]
-
-    name = models.CharField(max_length=100)
+    name = models.CharField(
+        max_length=150,
+        help_text="Specific operation name (e.g., 'Color Printing Quarter Size')"
+    )
     category = models.ForeignKey(
         OperationCategory,
         on_delete=models.CASCADE,
         related_name='operations'
     )
     description = models.TextField(blank=True)
-    pricing_type = models.CharField(max_length=20, choices=PRICING_TYPES)
 
-    # Pricing fields (usage depends on pricing_type)
+    # Cost Formula Constants
     makeready_price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Fixed setup cost"
+        help_text="Fixed setup cost (e.g., 10.00)"
     )
-    price_per_unit = models.DecimalField(
+    price_per_sheet = models.DecimalField(
         max_digits=10,
-        decimal_places=2,
+        decimal_places=4,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Cost per piece/kg/sheet/color"
-    )
-    outsourcing_rate = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text="Fixed outsourcing rate"
+        help_text="Cost per sheet processed (e.g., 0.005)"
     )
 
-    # Time calculations
+    # Additional cost constants (for operations like printing)
+    plate_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text="Cost per plate/color (for printing operations)"
+    )
+
+    # Waste calculation constants
+    base_waste_sheets = models.PositiveIntegerField(
+        default=0,
+        help_text="Base waste sheets (e.g., 30 for printing)"
+    )
+    waste_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        default=0,
+        help_text="Waste percentage per sheet (e.g., 0.0001 for 0.01%)"
+    )
+
+    # Time Formula Constants
     makeready_time_minutes = models.PositiveIntegerField(
         default=0,
-        help_text="Setup time in minutes"
+        help_text="Setup time in minutes (e.g., 15)"
     )
-    time_per_unit_seconds = models.PositiveIntegerField(
+    cleaning_time_minutes = models.PositiveIntegerField(
         default=0,
-        help_text="Processing time per unit in seconds"
+        help_text="Cleaning time per color in minutes (e.g., 20)"
+    )
+    sheets_per_minute = models.PositiveIntegerField(
+        default=1,
+        help_text="Processing speed (sheets per minute, e.g., 80)"
     )
 
     # Quantity effects
@@ -95,21 +108,17 @@ class Operation(models.Model):
         help_text="Multiply current quantity by this number"
     )
 
-    # Custom formula (for advanced operations)
-    custom_cost_formula = models.TextField(
-        blank=True,
-        help_text="Python expression for custom cost calculation"
+    # Operation behavior
+    uses_colors = models.BooleanField(
+        default=False,
+        help_text="Operation cost/time depends on number of colors"
     )
-    custom_time_formula = models.TextField(
-        blank=True,
-        help_text="Python expression for custom time calculation"
+    uses_front_colors_only = models.BooleanField(
+        default=False,
+        help_text="Uses only front colors for cleaning time calculation"
     )
 
     is_active = models.BooleanField(default=True)
-    requires_colors = models.BooleanField(
-        default=False,
-        help_text="Operation cost depends on number of colors"
-    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -121,15 +130,120 @@ class Operation(models.Model):
     def __str__(self):
         return f"{self.category.name} - {self.name}"
 
-    @property
-    def makeready_time(self):
-        """Return makeready time as timedelta."""
-        return timedelta(minutes=self.makeready_time_minutes)
+    def calculate_cost(self, job_params):
+        """
+        Calculate cost for this operation based on job parameters.
 
-    @property
-    def time_per_unit(self):
-        """Return time per unit as timedelta."""
-        return timedelta(seconds=self.time_per_unit_seconds)
+        Args:
+            job_params: dict with keys like:
+                - quantity: int
+                - n_up: int
+                - colors_front: int
+                - colors_back: int
+                - current_quantity: int (sheets going into this operation)
+
+        Returns:
+            dict with 'total_cost', 'waste_sheets', 'quantity_after'
+        """
+        current_quantity = job_params.get('current_quantity', job_params['quantity'])
+
+        # Calculate waste sheets if this operation generates waste
+        waste_sheets = 0
+        if self.base_waste_sheets > 0 or self.waste_percentage > 0:
+            if self.uses_colors:
+                total_colors = job_params['colors_front'] + job_params['colors_back']
+                waste_sheets = total_colors * (
+                    self.base_waste_sheets +
+                    float(self.waste_percentage) * current_quantity
+                )
+            else:
+                waste_sheets = (
+                    self.base_waste_sheets +
+                    float(self.waste_percentage) * current_quantity
+                )
+            waste_sheets = int(waste_sheets)
+
+        # Calculate processing quantity (including waste)
+        processing_quantity = current_quantity + waste_sheets
+
+        # Calculate cost
+        total_cost = float(self.makeready_price)
+
+        if self.uses_colors:
+            # For printing operations
+            total_colors = job_params['colors_front'] + job_params['colors_back']
+            total_cost += total_colors * (
+                float(self.plate_price) +
+                processing_quantity * float(self.price_per_sheet)
+            )
+        else:
+            # For other operations
+            total_cost += processing_quantity * float(self.price_per_sheet)
+
+        # Calculate quantity after this operation
+        quantity_after = current_quantity
+        if self.divides_quantity_by > 1:
+            quantity_after = current_quantity // self.divides_quantity_by
+        elif self.multiplies_quantity_by > 1:
+            quantity_after = current_quantity * self.multiplies_quantity_by
+
+        return {
+            'total_cost': total_cost,
+            'waste_sheets': waste_sheets,
+            'processing_quantity': processing_quantity,
+            'quantity_after': quantity_after
+        }
+
+    def calculate_time(self, job_params):
+        """
+        Calculate time for this operation based on job parameters.
+
+        Returns:
+            int: total time in minutes
+        """
+        current_quantity = job_params.get('current_quantity', job_params['quantity'])
+
+        # Calculate waste and processing quantity (same as cost calculation)
+        waste_sheets = 0
+        if self.base_waste_sheets > 0 or self.waste_percentage > 0:
+            if self.uses_colors:
+                total_colors = job_params['colors_front'] + job_params['colors_back']
+                waste_sheets = total_colors * (
+                    self.base_waste_sheets +
+                    float(self.waste_percentage) * current_quantity
+                )
+            else:
+                waste_sheets = (
+                    self.base_waste_sheets +
+                    float(self.waste_percentage) * current_quantity
+                )
+            waste_sheets = int(waste_sheets)
+
+        processing_quantity = current_quantity + waste_sheets
+
+        # Calculate time
+        total_time = self.makeready_time_minutes
+
+        if self.uses_colors:
+            # Add cleaning time
+            if self.uses_front_colors_only:
+                cleaning_colors = job_params['colors_front']
+            else:
+                total_colors = job_params['colors_front'] + job_params['colors_back']
+                cleaning_colors = total_colors
+
+            total_time += cleaning_colors * self.cleaning_time_minutes
+
+            # Add processing time per color
+            if self.sheets_per_minute > 0:
+                total_colors = job_params['colors_front'] + job_params['colors_back']
+                total_time += total_colors * (processing_quantity / self.sheets_per_minute)
+        else:
+            # Add processing time
+            if self.sheets_per_minute > 0:
+                total_time += processing_quantity / self.sheets_per_minute
+
+        return int(total_time)
 
 
 class PaperType(models.Model):
@@ -195,43 +309,3 @@ class PaperSize(models.Model):
     def area_cm2(self):
         """Calculate area in square centimeters."""
         return float(self.width_cm * self.height_cm)
-
-
-class PrintingMachine(models.Model):
-    """
-    Printing machines with specifications and pricing.
-    """
-    name = models.CharField(max_length=100, unique=True)
-    max_paper_width_cm = models.DecimalField(
-        max_digits=6,
-        decimal_places=2,
-        validators=[MinValueValidator(1)]
-    )
-    max_paper_height_cm = models.DecimalField(
-        max_digits=6,
-        decimal_places=2,
-        validators=[MinValueValidator(1)]
-    )
-    max_colors = models.PositiveIntegerField(default=4)
-    cost_per_hour = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        validators=[MinValueValidator(0)],
-        help_text="Operating cost per hour"
-    )
-    description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['name']
-
-    def __str__(self):
-        return f"{self.name} (max: {self.max_paper_width_cm}×{self.max_paper_height_cm}cm)"
-
-    def can_handle_size(self, width_cm, height_cm):
-        """Check if machine can handle given paper size."""
-        return (width_cm <= self.max_paper_width_cm and
-                height_cm <= self.max_paper_height_cm)

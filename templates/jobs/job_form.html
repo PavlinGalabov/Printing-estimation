@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+{% if object %}Edit Job{% else %}Create New Job{% endif %} - Printing Estimation
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'jobs:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'jobs:list' %}">Jobs</a></li>
+                    <li class="breadcrumb-item active">
+                        {% if object %}Edit Job{% else %}New Job{% endif %}
+                    </li>
+                </ol>
+            </nav>
+            
+            <h1 class="display-6 mb-4">
+                <i class="bi bi-{% if object %}pencil{% else %}plus-circle{% endif %} me-2"></i>
+                {% if object %}Edit Job: {{ object.order_name }}{% else %}Create New Job{% endif %}
+            </h1>
+        </div>
+    </div>
+    
+    <form method="post" id="jobForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Main Form -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-earmark-text me-2"></i>
+                            Job Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.client.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person me-1"></i>Client *
+                                    </label>
+                                    {{ form.client }}
+                                    {% if form.client.errors %}
+                                        <div class="text-danger small">{{ form.client.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.order_type.id_for_label }}" class="form-label">
+                                        <i class="bi bi-tag me-1"></i>Order Type *
+                                    </label>
+                                    {{ form.order_type }}
+                                    {% if form.order_type.errors %}
+                                        <div class="text-danger small">{{ form.order_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.order_name.id_for_label }}" class="form-label">
+                                        <i class="bi bi-card-text me-1"></i>Order Name *
+                                    </label>
+                                    {{ form.order_name }}
+                                    {% if form.order_name.errors %}
+                                        <div class="text-danger small">{{ form.order_name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.quantity.id_for_label }}" class="form-label">
+                                        <i class="bi bi-123 me-1"></i>Quantity *
+                                    </label>
+                                    {{ form.quantity }}
+                                    {% if form.quantity.errors %}
+                                        <div class="text-danger small">{{ form.quantity.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Paper Specifications -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-earmark me-2"></i>
+                            Paper Specifications
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.paper_type.id_for_label }}" class="form-label">Paper Type *</label>
+                                    {{ form.paper_type }}
+                                    {% if form.paper_type.errors %}
+                                        <div class="text-danger small">{{ form.paper_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.end_size.id_for_label }}" class="form-label">End Size *</label>
+                                    {{ form.end_size }}
+                                    {% if form.end_size.errors %}
+                                        <div class="text-danger small">{{ form.end_size.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.printing_size.id_for_label }}" class="form-label">Printing Size *</label>
+                                    {{ form.printing_size }}
+                                    {% if form.printing_size.errors %}
+                                        <div class="text-danger small">{{ form.printing_size.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.selling_size.id_for_label }}" class="form-label">Selling Size *</label>
+                                    {{ form.selling_size }}
+                                    {% if form.selling_size.errors %}
+                                        <div class="text-danger small">{{ form.selling_size.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.parts_of_selling_size.id_for_label }}" class="form-label">
+                                        Parts of Selling Size *
+                                    </label>
+                                    {{ form.parts_of_selling_size }}
+                                    <div class="form-text">{{ form.parts_of_selling_size.help_text }}</div>
+                                    {% if form.parts_of_selling_size.errors %}
+                                        <div class="text-danger small">{{ form.parts_of_selling_size.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Production Settings -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear me-2"></i>
+                            Production Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.n_up.id_for_label }}" class="form-label">N-up *</label>
+                                    {{ form.n_up }}
+                                    <div class="form-text">{{ form.n_up.help_text }}</div>
+                                    {% if form.n_up.errors %}
+                                        <div class="text-danger small">{{ form.n_up.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.colors_front.id_for_label }}" class="form-label">Colors Front *</label>
+                                    {{ form.colors_front }}
+                                    {% if form.colors_front.errors %}
+                                        <div class="text-danger small">{{ form.colors_front.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.colors_back.id_for_label }}" class="form-label">Colors Back *</label>
+                                    {{ form.colors_back }}
+                                    {% if form.colors_back.errors %}
+                                        <div class="text-danger small">{{ form.colors_back.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.special_colors.id_for_label }}" class="form-label">Special Colors</label>
+                                    {{ form.special_colors }}
+                                    {% if form.special_colors.errors %}
+                                        <div class="text-danger small">{{ form.special_colors.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Book-specific fields -->
+                        <div id="bookFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.number_of_pages.id_for_label }}" class="form-label">Number of Pages</label>
+                                        {{ form.number_of_pages }}
+                                        {% if form.number_of_pages.errors %}
+                                            <div class="text-danger small">{{ form.number_of_pages.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.n_up_signatures.id_for_label }}" class="form-label">N-up Signatures</label>
+                                        {{ form.n_up_signatures }}
+                                        {% if form.n_up_signatures.errors %}
+                                            <div class="text-danger small">{{ form.n_up_signatures.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Information -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-chat-text me-2"></i>
+                            Additional Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.variant_quantities.id_for_label }}" class="form-label">Variant Quantities</label>
+                            {{ form.variant_quantities }}
+                            <div class="form-text">{{ form.variant_quantities.help_text }}</div>
+                            {% if form.variant_quantities.errors %}
+                                <div class="text-danger small">{{ form.variant_quantities.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-{% if object %}pencil{% else %}plus{% endif %} me-2"></i>
+                                {% if object %}Update Job{% else %}Create Job{% endif %}
+                            </button>
+                            
+                            {% if object %}
+                            <a href="{% url 'jobs:calculate' object.pk %}" class="btn btn-success">
+                                <i class="bi bi-calculator me-2"></i>
+                                Calculate Costs
+                            </a>
+                            {% endif %}
+                            
+                            <a href="{% url 'jobs:list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Back to Jobs
+                            </a>
+                        </div>
+                        
+                        {% if object %}
+                        <hr>
+                        <div class="small text-muted">
+                            <div><strong>Created:</strong> {{ object.created_at|date:"M d, Y H:i" }}</div>
+                            <div><strong>Updated:</strong> {{ object.updated_at|date:"M d, Y H:i" }}</div>
+                            <div><strong>Status:</strong> 
+                                <span class="badge bg-secondary">{{ object.get_status_display }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Quick Help -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-question-circle me-2"></i>
+                            Quick Help
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="small">
+                            <p><strong>N-up:</strong> Number of items printed per sheet</p>
+                            <p><strong>Parts of Selling Size:</strong> How many printing sheets you can cut from one purchased sheet</p>
+                            <p><strong>Variant Quantities:</strong> Additional quantities for volume pricing (e.g., 2000,5000,10000)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide book-specific fields
+    const orderTypeField = document.querySelector('#{{ form.order_type.id_for_label }}');
+    const bookFields = document.querySelector('#bookFields');
+    
+    function toggleBookFields() {
+        if (orderTypeField.value === 'book') {
+            bookFields.style.display = 'block';
+        } else {
+            bookFields.style.display = 'none';
+        }
+    }
+    
+    orderTypeField.addEventListener('change', toggleBookFields);
+    toggleBookFields(); // Initialize on page load
+});
+</script>
+{% endblock %}

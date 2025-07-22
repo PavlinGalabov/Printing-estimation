@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Jobs - Printing Estimation{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="display-6">
+                    <i class="bi bi-file-earmark-text me-2"></i>
+                    Jobs
+                </h1>
+                <a href="{% url 'jobs:create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    New Job
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search_query }}" placeholder="Search jobs...">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if value == current_status %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-search me-1"></i>Filter
+                            </button>
+                            <a href="{% url 'jobs:list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Jobs Table -->
+    <div class="row">
+        <div class="col-12">
+            {% if jobs %}
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Job #</th>
+                                        <th>Client</th>
+                                        <th>Order Name</th>
+                                        <th>Type</th>
+                                        <th>Quantity</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Total Cost</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in jobs %}
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                {% if job.job_number %}
+                                                    {{ job.job_number }}
+                                                {% else %}
+                                                    <span class="text-muted">Draft</span>
+                                                {% endif %}
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ job.client.company_name }}</strong>
+                                                {% if job.client.contact_person %}
+                                                    <br><small class="text-muted">{{ job.client.contact_person }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'jobs:detail' job.pk %}" class="text-decoration-none">
+                                                {{ job.order_name }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                {{ job.get_order_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ job.quantity|floatformat:0 }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if job.status == 'draft' %}bg-warning text-dark
+                                                {% elif job.status == 'calculated' %}bg-info
+                                                {% elif job.status == 'sent' %}bg-primary
+                                                {% elif job.status == 'approved' %}bg-success
+                                                {% elif job.status == 'rejected' %}bg-danger
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ job.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div>{{ job.created_at|date:"M d, Y" }}</div>
+                                            <small class="text-muted">{{ job.created_at|time:"H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            {% if job.total_cost %}
+                                                <strong>€{{ job.total_cost|floatformat:2 }}</strong>
+                                            {% else %}
+                                                <span class="text-muted">Not calculated</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'jobs:detail' job.pk %}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'jobs:edit' job.pk %}" 
+                                                   class="btn btn-outline-secondary" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                {% if job.status == 'draft' or job.status == 'calculated' %}
+                                                <a href="{% url 'jobs:calculate' job.pk %}" 
+                                                   class="btn btn-outline-success" title="Calculate">
+                                                    <i class="bi bi-calculator"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Jobs pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-5">
+                    <i class="bi bi-file-earmark-text text-muted" style="font-size: 4rem;"></i>
+                    <h3 class="mt-3 text-muted">No Jobs Found</h3>
+                    <p class="text-muted">
+                        {% if search_query or current_status %}
+                            No jobs match your current filters. Try adjusting your search criteria.
+                        {% else %}
+                            You haven't created any jobs yet. Start by creating your first job.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'jobs:create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Create Your First Job
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
