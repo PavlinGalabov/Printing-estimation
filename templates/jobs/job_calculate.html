@@ -1,0 +1,427 @@
+{% extends 'base.html' %}
+
+{% block title %}Calculate - {{ job.order_name }} - Printing Estimation{% endblock %}
+
+{% block extra_css %}
+<style>
+.operation-item {
+    border-left: 4px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+.operation-item:hover {
+    border-left-color: #007bff;
+    background-color: #f8f9fa;
+}
+.operation-item.calculated {
+    border-left-color: #28a745;
+}
+.sortable-operations {
+    min-height: 100px;
+}
+.calculation-result {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+.add-operation-btn {
+    border: 2px dashed #dee2e6;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+.add-operation-btn:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'jobs:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'jobs:list' %}">Jobs</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'jobs:detail' job.pk %}">{{ job.order_name }}</a></li>
+                    <li class="breadcrumb-item active">Calculate</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="display-6">
+                    <i class="bi bi-calculator me-2"></i>
+                    Calculate: {{ job.order_name }}
+                </h1>
+                <div class="btn-group">
+                    <a href="{% url 'jobs:edit' job.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>Edit Job
+                    </a>
+                    <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye me-1"></i>View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Job Parameters -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear me-2"></i>
+                        Job Parameters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2 small">
+                        <div class="col-6"><strong>Client:</strong></div>
+                        <div class="col-6">{{ job.client.company_name }}</div>
+
+                        <div class="col-6"><strong>Quantity:</strong></div>
+                        <div class="col-6">{{ job.quantity|floatformat:0 }}</div>
+
+                        <div class="col-6"><strong>N-up:</strong></div>
+                        <div class="col-6">{{ job.n_up }}</div>
+
+                        <div class="col-6"><strong>Colors:</strong></div>
+                        <div class="col-6">{{ job.colors_front }}/{{ job.colors_back }}</div>
+
+                        <div class="col-6"><strong>Paper:</strong></div>
+                        <div class="col-6">{{ job.paper_type.name }}</div>
+
+                        <div class="col-6"><strong>Print Size:</strong></div>
+                        <div class="col-6">{{ job.printing_size.name }}</div>
+
+                        {% if job.print_run %}
+                        <div class="col-12"><hr class="my-2"></div>
+                        <div class="col-6"><strong>Print Run:</strong></div>
+                        <div class="col-6">{{ job.print_run }} sheets</div>
+
+                        <div class="col-6"><strong>Waste:</strong></div>
+                        <div class="col-6">{{ job.waste_sheets }} sheets</div>
+
+                        <div class="col-6"><strong>To Buy:</strong></div>
+                        <div class="col-6">{{ job.sheets_to_buy }} sheets</div>
+
+                        <div class="col-6"><strong>Paper Weight:</strong></div>
+                        <div class="col-6">{{ job.paper_weight_kg|floatformat:2 }} kg</div>
+                        {% endif %}
+                    </div>
+
+                    {% if job.variant_quantities %}
+                    <hr>
+                    <div class="small">
+                        <strong>Variant Quantities:</strong><br>
+                        <span class="text-muted">{{ job.variant_quantities }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Calculation Results -->
+            {% if job.total_cost %}
+            <div class="card mt-3 calculation-result">
+                <div class="card-body text-center">
+                    <h3 class="mb-1">€{{ job.total_cost|floatformat:2 }}</h3>
+                    <p class="mb-2">Total Cost</p>
+                    {% if job.total_time %}
+                    <div class="small opacity-75">
+                        <i class="bi bi-clock me-1"></i>
+                        {{ job.total_time_minutes }} minutes
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quantity Variants -->
+            {% if job.variants.exists %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Quantity Variants
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Qty</th>
+                                    <th>Total</th>
+                                    <th>Per Pc</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for variant in job.variants.all %}
+                                <tr>
+                                    <td>{{ variant.quantity|floatformat:0 }}</td>
+                                    <td>€{{ variant.total_cost|floatformat:2 }}</td>
+                                    <td>€{{ variant.cost_per_piece|floatformat:3 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Operations Management -->
+        <div class="col-lg-8">
+            <!-- Current Operations -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ol me-2"></i>
+                        Operations Sequence
+                    </h5>
+                    <button type="button" class="btn btn-success" id="calculateBtn">
+                        <i class="bi bi-calculator me-2"></i>
+                        Calculate
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="operationsContainer" class="sortable-operations">
+                        {% if job_operations %}
+                            {% for job_op in job_operations %}
+                            <div class="operation-item p-3 mb-3 rounded {% if job_op.total_cost > 0 %}calculated{% endif %}"
+                                 data-operation-id="{{ job_op.id }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="badge bg-primary me-2">{{ job_op.sequence_order }}</span>
+                                            <h6 class="mb-0">{{ job_op.operation_name }}</h6>
+                                            <span class="badge bg-secondary ms-2">{{ job_op.operation.category.name }}</span>
+                                        </div>
+
+                                        {% if job_op.total_cost > 0 %}
+                                        <div class="row g-2 small text-muted">
+                                            <div class="col-sm-6">
+                                                <i class="bi bi-arrow-right me-1"></i>
+                                                {{ job_op.quantity_before }} → {{ job_op.quantity_after }} sheets
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <i class="bi bi-currency-euro me-1"></i>
+                                                €{{ job_op.total_cost|floatformat:2 }}
+                                            </div>
+                                            {% if job_op.waste_sheets > 0 %}
+                                            <div class="col-sm-6">
+                                                <i class="bi bi-trash me-1"></i>
+                                                {{ job_op.waste_sheets }} waste sheets
+                                            </div>
+                                            {% endif %}
+                                            <div class="col-sm-6">
+                                                <i class="bi bi-clock me-1"></i>
+                                                {{ job_op.total_time_minutes }} min
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="small text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Not calculated yet
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="d-flex align-items-center ms-3">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-operation-btn"
+                                                data-operation-id="{{ job_op.id }}" title="Remove">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        <div class="ms-2 text-muted" style="cursor: grab;">
+                                            <i class="bi bi-grip-vertical"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-plus-circle" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">No operations added yet</p>
+                                <small>Add operations below to start calculating</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Operations -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Add Operations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for operation in available_operations %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <button type="button"
+                                    class="btn add-operation-btn w-100 text-start p-3"
+                                    data-operation-id="{{ operation.id }}"
+                                    title="Add {{ operation.name }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">{{ operation.name }}</div>
+                                        <small class="text-muted">{{ operation.category.name }}</small>
+                                    </div>
+                                    <i class="bi bi-plus-lg"></i>
+                                </div>
+                                <div class="mt-2 small text-muted">
+                                    €{{ operation.makeready_price|floatformat:2 }} + €{{ operation.price_per_sheet|floatformat:3 }}/sheet
+                                </div>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="calculatingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h6>Calculating costs...</h6>
+                <p class="mb-0 text-muted">Please wait</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const jobId = {{ job.id }};
+    const calculateBtn = document.getElementById('calculateBtn');
+    const calculatingModal = new bootstrap.Modal(document.getElementById('calculatingModal'));
+
+    // Add operation functionality
+    document.querySelectorAll('.add-operation-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const operationId = this.dataset.operationId;
+            addOperation(operationId);
+        });
+    });
+
+    // Remove operation functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-operation-btn')) {
+            const operationId = e.target.closest('.remove-operation-btn').dataset.operationId;
+            removeOperation(operationId);
+        }
+    });
+
+    // Calculate button
+    calculateBtn.addEventListener('click', function() {
+        calculateJob();
+    });
+
+    function addOperation(operationId) {
+        fetch(`/jobs/${jobId}/add-operation/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: `operation_id=${operationId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Refresh to show new operation
+            } else {
+                alert('Error adding operation: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding operation');
+        });
+    }
+
+    function removeOperation(operationId) {
+        if (confirm('Are you sure you want to remove this operation?')) {
+            fetch(`/jobs/${jobId}/remove-operation/${operationId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Refresh to update sequence
+                } else {
+                    alert('Error removing operation: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error removing operation');
+            });
+        }
+    }
+
+    function calculateJob() {
+        calculatingModal.show();
+
+        fetch(`/jobs/${jobId}/calculate/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            calculatingModal.hide();
+
+            if (data.success) {
+                // Refresh page to show updated calculations
+                location.reload();
+            } else {
+                alert('Calculation error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            calculatingModal.hide();
+            console.error('Error:', error);
+            alert('Error during calculation');
+        });
+    }
+
+    function getCsrfToken() {
+        // Try to get CSRF token from various sources
+        let token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (!token) {
+            token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        }
+        if (!token) {
+            // Try to get from cookie
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+            token = cookieValue;
+        }
+        return token || '';
+    }
+});
+</script>
+{% endblock %}
