@@ -19,7 +19,7 @@ class JobForm(forms.ModelForm):
             'paper_type', 'end_size', 'printing_size', 'selling_size',
             'parts_of_selling_size', 'n_up', 'colors_front', 'colors_back',
             'special_colors', 'number_of_pages', 'n_up_signatures',
-            'notes', 'variant_quantities'
+            'notes', 'variant_quantities', 'is_template', 'template_name'
         ]
         widgets = {
             'client': forms.Select(attrs={'class': 'form-select'}),
@@ -41,6 +41,9 @@ class JobForm(forms.ModelForm):
                                            'placeholder': 'Client remarks, agreements, special requirements...'}),
             'variant_quantities': forms.TextInput(
                 attrs={'class': 'form-control', 'placeholder': 'e.g., 2000,5000,10000'}),
+            'is_template': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'template_name': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'Enter template name'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -63,6 +66,9 @@ class JobForm(forms.ModelForm):
         # Make book-specific fields conditional
         self.fields['number_of_pages'].required = False
         self.fields['n_up_signatures'].required = False
+        
+        # Make template fields conditional
+        self.fields['template_name'].required = False
 
     def clean_variant_quantities(self):
         """Validate variant quantities format."""
@@ -95,6 +101,16 @@ class JobForm(forms.ModelForm):
                 self.add_error('n_up_signatures', 'N-up signatures is required for books.')
 
         return cleaned_data
+
+    def clean_template_name(self):
+        """Validate template name if is_template is checked."""
+        template_name = self.cleaned_data.get('template_name')
+        is_template = self.cleaned_data.get('is_template')
+        
+        if is_template and not template_name:
+            raise ValidationError("Template name is required when saving as template.")
+        
+        return template_name
 
 
 class JobOperationForm(forms.ModelForm):

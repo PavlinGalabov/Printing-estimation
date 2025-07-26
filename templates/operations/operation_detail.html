@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ operation.name }} - Operations - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'operations:list' %}">Operations</a></li>
+                            <li class="breadcrumb-item active">{{ operation.name }}</li>
+                        </ol>
+                    </nav>
+                    <h2>{{ operation.name }}</h2>
+                    <span class="badge rounded-pill" style="background-color: {{ operation.category.color }}">
+                        {{ operation.category.name }}
+                    </span>
+                    {% if operation.is_active %}
+                        <span class="badge bg-success ms-2">Active</span>
+                    {% else %}
+                        <span class="badge bg-secondary ms-2">Inactive</span>
+                    {% endif %}
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'operations:edit' operation.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </a>
+                    <a href="{% url 'operations:delete' operation.pk %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </a>
+                </div>
+            </div>
+
+            {% if operation.description %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Description</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">{{ operation.description }}</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>Cost Formula</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <strong>Setup Cost:</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    ${{ operation.makeready_price }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <strong>Cost per Sheet:</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    ${{ operation.price_per_sheet }}
+                                </div>
+                            </div>
+                            {% if operation.plate_price > 0 %}
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <strong>Plate Cost:</strong>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        ${{ operation.plate_price }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-clock me-2"></i>Time Formula</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-sm-7">
+                                    <strong>Setup Time:</strong>
+                                </div>
+                                <div class="col-sm-5">
+                                    {{ operation.makeready_time_minutes }} min
+                                </div>
+                            </div>
+                            {% if operation.cleaning_time_minutes > 0 %}
+                                <div class="row mb-3">
+                                    <div class="col-sm-7">
+                                        <strong>Cleaning Time:</strong>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        {{ operation.cleaning_time_minutes }} min/color
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="row mb-3">
+                                <div class="col-sm-7">
+                                    <strong>Processing Speed:</strong>
+                                </div>
+                                <div class="col-sm-5">
+                                    {{ operation.sheets_per_minute }} sheets/min
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-trash3 me-2"></i>Waste Calculation</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-sm-7">
+                                    <strong>Base Waste:</strong>
+                                </div>
+                                <div class="col-sm-5">
+                                    {{ operation.base_waste_sheets }} sheets
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-7">
+                                    <strong>Waste Percentage:</strong>
+                                </div>
+                                <div class="col-sm-5">
+                                    {{ operation.waste_percentage|floatformat:4 }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>Quantity Effects</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if operation.divides_quantity_by > 1 %}
+                                <div class="row mb-3">
+                                    <div class="col-sm-7">
+                                        <strong>Divides Quantity:</strong>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        ÷ {{ operation.divides_quantity_by }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if operation.multiplies_quantity_by > 1 %}
+                                <div class="row mb-3">
+                                    <div class="col-sm-7">
+                                        <strong>Multiplies Quantity:</strong>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        × {{ operation.multiplies_quantity_by }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if operation.uses_colors %}
+                                <div class="alert alert-info mb-0">
+                                    <small><i class="bi bi-palette me-1"></i>This operation uses color information for calculations</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info me-2"></i>Operation Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Category:</strong><br>
+                        <span class="badge rounded-pill" style="background-color: {{ operation.category.color }}">
+                            {{ operation.category.name }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong><br>
+                        {% if operation.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Created:</strong><br>
+                        <small class="text-muted">{{ operation.created_at|date:"M d, Y" }}</small>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Last Updated:</strong><br>
+                        <small class="text-muted">{{ operation.updated_at|date:"M d, Y" }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

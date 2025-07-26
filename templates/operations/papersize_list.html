@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Paper Sizes - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-aspect-ratio me-2"></i>Paper Sizes</h2>
+                {% if user.is_superuser_type %}
+                    <a href="/admin/operations/papersize/add/" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Add Paper Size
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if paper_sizes %}
+                <div class="row">
+                    {% for paper_size in paper_sizes %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <strong>{{ paper_size.name }}</strong>
+                                    {% if paper_size.is_standard %}
+                                        <span class="badge bg-primary">Standard</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Custom</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4">
+                                            <strong>Dimensions:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            {{ paper_size.width_cm }} × {{ paper_size.height_cm }} cm
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4">
+                                            <strong>Area:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            {{ paper_size.area_m2|floatformat:4 }} m²
+                                        </div>
+                                    </div>
+                                    {% if paper_size.description %}
+                                        <div class="row">
+                                            <div class="col-sm-4">
+                                                <strong>Description:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <small class="text-muted">{{ paper_size.description|truncatewords:8 }}</small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% if user.is_superuser_type %}
+                                    <div class="card-footer">
+                                        <a href="/admin/operations/papersize/{{ paper_size.pk }}/change/" 
+                                           class="btn btn-outline-primary btn-sm w-100">
+                                            <i class="bi bi-pencil me-1"></i>Edit
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if is_paginated %}
+                    <nav aria-label="Paper sizes pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">&laquo; First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No paper sizes found. 
+                    {% if user.is_superuser_type %}
+                        <a href="/admin/operations/papersize/add/">Create your first paper size</a>.
+                    {% else %}
+                        Contact an administrator to add paper sizes.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

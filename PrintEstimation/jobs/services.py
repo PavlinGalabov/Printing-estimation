@@ -358,8 +358,105 @@ class JobOperationManager:
     @staticmethod
     def reorder_operations(job, operation_ids):
         """Reorder operations based on list of operation IDs."""
-        for index, operation_id in enumerate(operation_ids, 1):
-            JobOperation.objects.filter(
-                job=job,
-                id=operation_id
-            ).update(sequence_order=index)
+        from django.db import transaction, connection
+        
+        with transaction.atomic():
+            # Convert operation_ids to integers and validate
+            try:
+                operation_ids = [int(op_id) for op_id in operation_ids if str(op_id).isdigit()]
+            except (ValueError, TypeError):
+                raise ValueError("Invalid operation IDs provided")
+            
+            if not operation_ids:
+                return
+            
+            # Get all operations for this job
+            job_operations = list(JobOperation.objects.filter(job=job).order_by('id'))
+            
+            if len(operation_ids) != len(job_operations):
+                raise ValueError("Operation count mismatch")
+            
+            # Validate all operation IDs exist and belong to this job
+            existing_ids = {op.id for op in job_operations}
+            provided_ids = set(operation_ids)
+            
+            if not provided_ids.issubset(existing_ids):
+                raise ValueError("Some operation IDs don't belong to this job")
+            
+            # Method 1: Try using raw SQL to bypass constraint temporarily
+            try:
+                with connection.cursor() as cursor:
+                    # Get table name
+                    table_name = JobOperation._meta.db_table
+                    
+                    # Set all sequence_order to NULL temporarily (if column allows it)
+                    # or to a large offset to avoid conflicts
+                    max_sequence = len(job_operations) * 1000
+                    
+                    for i, operation_id in enumerate(operation_ids, 1):
+                        cursor.execute(
+                            f"UPDATE {table_name} SET sequence_order = %s WHERE id = %s AND job_id = %s",
+                            [i + max_sequence, operation_id, job.id]
+                        )
+                    
+                    # Now set the correct sequence orders
+                    for i, operation_id in enumerate(operation_ids, 1):
+                        cursor.execute(
+                            f"UPDATE {table_name} SET sequence_order = %s WHERE id = %s AND job_id = %s",
+                            [i, operation_id, job.id]
+                        )
+                        
+            except Exception as e:
+                # Fallback: Delete and recreate approach
+                print(f"Raw SQL approach failed: {e}, trying delete/recreate approach")
+                
+                # Store all operation data
+                operations_data = []
+                for operation in job_operations:
+                    operations_data.append({
+                        'operation_id': operation.operation_id,
+                        'operation_name': operation.operation_name,
+                        'makeready_price': operation.makeready_price,
+                        'price_per_sheet': operation.price_per_sheet,
+                        'plate_price': operation.plate_price,
+                        'makeready_time_minutes': operation.makeready_time_minutes,
+                        'cleaning_time_minutes': operation.cleaning_time_minutes,
+                        'sheets_per_minute': operation.sheets_per_minute,
+                        'quantity_before': operation.quantity_before,
+                        'quantity_after': operation.quantity_after,
+                        'waste_sheets': operation.waste_sheets,
+                        'processing_quantity': operation.processing_quantity,
+                        'total_cost': operation.total_cost,
+                        'total_time_minutes': operation.total_time_minutes,
+                        'colors_used': operation.colors_used,
+                    })
+                
+                # Create lookup for operation data by ID
+                data_lookup = {op.id: data for op, data in zip(job_operations, operations_data)}
+                
+                # Delete all existing operations for this job
+                JobOperation.objects.filter(job=job).delete()
+                
+                # Recreate operations in the new order
+                for sequence, operation_id in enumerate(operation_ids, 1):
+                    if operation_id in data_lookup:
+                        data = data_lookup[operation_id]
+                        JobOperation.objects.create(
+                            job=job,
+                            operation_id=data['operation_id'],
+                            sequence_order=sequence,
+                            operation_name=data['operation_name'],
+                            makeready_price=data['makeready_price'],
+                            price_per_sheet=data['price_per_sheet'],
+                            plate_price=data['plate_price'],
+                            makeready_time_minutes=data['makeready_time_minutes'],
+                            cleaning_time_minutes=data['cleaning_time_minutes'],
+                            sheets_per_minute=data['sheets_per_minute'],
+                            quantity_before=data['quantity_before'],
+                            quantity_after=data['quantity_after'],
+                            waste_sheets=data['waste_sheets'],
+                            processing_quantity=data['processing_quantity'],
+                            total_cost=data['total_cost'],
+                            total_time_minutes=data['total_time_minutes'],
+                            colors_used=data['colors_used'],
+                        )
