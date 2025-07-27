@@ -108,15 +108,152 @@ class JobCreateView(LoginRequiredMixin, CreateView):
     form_class = JobForm
     template_name = 'jobs/job_form.html'
 
+    def get_initial(self):
+        """Pre-fill form with template data if template parameter is provided."""
+        initial = super().get_initial()
+        
+        template_id = self.request.GET.get('template')
+        if template_id:
+            try:
+                template = Job.objects.get(
+                    id=template_id, 
+                    is_template=True, 
+                    created_by=self.request.user
+                )
+                
+                # Copy all relevant fields from template
+                initial.update({
+                    'client': template.client,
+                    'order_type': template.order_type,
+                    'order_name': template.order_name,
+                    'quantity': template.quantity,
+                    'paper_type': template.paper_type,
+                    'end_size': template.end_size,
+                    'printing_size': template.printing_size,
+                    'selling_size': template.selling_size,
+                    'parts_of_selling_size': template.parts_of_selling_size,
+                    'n_up': template.n_up,
+                    'colors_front': template.colors_front,
+                    'colors_back': template.colors_back,
+                    'special_colors': template.special_colors,
+                    'number_of_pages': template.number_of_pages,
+                    'n_up_signatures': template.n_up_signatures,
+                    'notes': template.notes,
+                    # Don't copy template fields for new job
+                    'is_template': False,
+                    'template_name': '',
+                })
+                
+            except Job.DoesNotExist:
+                messages.warning(self.request, 'Template not found or access denied.')
+        
+        return initial
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['operations'] = Operation.objects.filter(is_active=True)
+        
+        # Add template info to context if using template
+        template_id = self.request.GET.get('template')
+        if template_id:
+            try:
+                template = Job.objects.get(
+                    id=template_id, 
+                    is_template=True, 
+                    created_by=self.request.user
+                )
+                context['using_template'] = template
+            except Job.DoesNotExist:
+                pass
+        
         return context
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        messages.success(self.request, f'Job "{form.instance.order_name}" created successfully!')
-        return super().form_valid(form)
+        
+        # Clear template-specific fields when creating a new job
+        if not form.instance.is_template:
+            form.instance.template_name = ''
+        
+        response = super().form_valid(form)
+        
+        # Handle operations for new job creation
+        selected_operations = self.request.POST.get('selected_operations')
+        if selected_operations:
+            try:
+                import json
+                operations_data = json.loads(selected_operations)
+                for op_data in operations_data:
+                    operation = Operation.objects.get(id=op_data['operation_id'])
+                    JobOperation.objects.create(
+                        job=self.object,
+                        operation=operation,
+                        sequence_order=op_data['sequence_order'],
+                        operation_name=operation.name,
+                        makeready_price=operation.makeready_price,
+                        price_per_sheet=operation.price_per_sheet,
+                        plate_price=operation.plate_price,
+                        makeready_time_minutes=operation.makeready_time_minutes,
+                        cleaning_time_minutes=operation.cleaning_time_minutes,
+                        sheets_per_minute=operation.sheets_per_minute,
+                        operation_parameters=op_data.get('parameters'),  # Save parameters
+                        quantity_before=0,
+                        quantity_after=0,
+                        waste_sheets=0,
+                        processing_quantity=0,
+                        total_cost=0,
+                        total_time_minutes=0,
+                        colors_used=0,
+                    )
+                messages.success(
+                    self.request, 
+                    f'Job "{form.instance.order_name}" created with {len(operations_data)} operations!'
+                )
+                return response
+            except (json.JSONDecodeError, Operation.DoesNotExist, KeyError) as e:
+                messages.warning(self.request, f'Job created but operations could not be added: {str(e)}')
+                return response
+        
+        # Copy operations from template if creating from template
+        template_id = self.request.GET.get('template')
+        if template_id:
+            try:
+                template = Job.objects.get(
+                    id=template_id, 
+                    is_template=True, 
+                    created_by=self.request.user
+                )
+                
+                # Copy operations from template
+                for template_operation in template.job_operations.all().order_by('sequence_order'):
+                    JobOperation.objects.create(
+                        job=self.object,
+                        operation=template_operation.operation,
+                        sequence_order=template_operation.sequence_order,
+                        operation_name=template_operation.operation_name,
+                        makeready_price=template_operation.makeready_price,
+                        price_per_sheet=template_operation.price_per_sheet,
+                        plate_price=template_operation.plate_price,
+                        makeready_time_minutes=template_operation.makeready_time_minutes,
+                        cleaning_time_minutes=template_operation.cleaning_time_minutes,
+                        sheets_per_minute=template_operation.sheets_per_minute,
+                        quantity_before=0,  # Will be calculated
+                        quantity_after=0,   # Will be calculated
+                        processing_quantity=0,  # Will be calculated
+                        total_cost=0,       # Will be calculated
+                        total_time_minutes=0,  # Will be calculated
+                    )
+                
+                messages.success(
+                    self.request, 
+                    f'Job "{form.instance.order_name}" created from template "{template.template_name or template.order_name}" with {template.job_operations.count()} operations!'
+                )
+            except Job.DoesNotExist:
+                messages.success(self.request, f'Job "{form.instance.order_name}" created successfully!')
+        else:
+            messages.success(self.request, f'Job "{form.instance.order_name}" created successfully!')
+        
+        return response
 
 
 class JobUpdateView(LoginRequiredMixin, UpdateView):
@@ -124,6 +261,7 @@ class JobUpdateView(LoginRequiredMixin, UpdateView):
     model = Job
     form_class = JobForm
     template_name = 'jobs/job_form.html'
+    
 
     def get_queryset(self):
         return Job.objects.filter(created_by=self.request.user)
@@ -183,8 +321,7 @@ class JobCalculateView(LoginRequiredMixin, DetailView):
                     'success': True,
                     'total_cost': float(result['total_cost']),
                     'total_time': result['total_time_formatted'],
-                    'operations_count': len(result['operations']),
-                    'variants_count': len(result['variants'])
+                    'operations_count': len(result['operations'])
                 })
             else:
                 messages.error(request, result['error'])
@@ -254,7 +391,6 @@ def remove_operation_from_job(request, job_id, operation_id):
         })
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ReorderOperationsView(LoginRequiredMixin, DetailView):
     """Reorder operations in a job via AJAX."""
     model = Job
@@ -266,17 +402,60 @@ class ReorderOperationsView(LoginRequiredMixin, DetailView):
         job = self.get_object()
 
         try:
+            # Debug logging
+            print(f"Reorder request for job {job.id}")
+            print(f"Request body: {request.body}")
+            
             data = json.loads(request.body)
             operation_ids = data.get('operation_ids', [])
+            
+            print(f"Operation IDs to reorder: {operation_ids}")
+            
+            if not operation_ids:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No operation IDs provided'
+                })
+
+            # Validate that all operation IDs belong to this job
+            existing_operations = set(
+                job.job_operations.values_list('id', flat=True)
+            )
+            provided_operations = set(int(op_id) for op_id in operation_ids if str(op_id).isdigit())
+            
+            print(f"Existing operations: {existing_operations}")
+            print(f"Provided operations: {provided_operations}")
+            
+            if not provided_operations.issubset(existing_operations):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid operation IDs provided'
+                })
 
             JobOperationManager.reorder_operations(job, operation_ids)
-
+            
+            print("Reorder completed successfully")
             return JsonResponse({'success': True})
 
-        except Exception as e:
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
             return JsonResponse({
                 'success': False,
-                'error': str(e)
+                'error': f'Invalid JSON data: {str(e)}'
+            })
+        except ValueError as e:
+            print(f"Validation error: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Validation error: {str(e)}'
+            })
+        except Exception as e:
+            print(f"Reorder error: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'error': f'Database error: {str(e)}'
             })
 
 

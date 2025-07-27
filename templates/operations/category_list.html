@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Operation Categories - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-tags me-2"></i>Operation Categories</h2>
+                {% if user.is_superuser_type %}
+                    <a href="/admin/operations/operationcategory/add/" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Add Category
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if categories %}
+                <div class="row">
+                    {% for category in categories %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span class="badge rounded-pill" style="background-color: {{ category.color }}">
+                                        {{ category.name }}
+                                    </span>
+                                    <small class="text-muted">{{ category.operations.count }} operations</small>
+                                </div>
+                                <div class="card-body">
+                                    {% if category.description %}
+                                        <p class="card-text">{{ category.description }}</p>
+                                    {% else %}
+                                        <p class="card-text text-muted fst-italic">No description provided</p>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">Order: {{ category.sort_order }}</small>
+                                        {% if user.is_superuser_type %}
+                                            <a href="/admin/operations/operationcategory/{{ category.pk }}/change/" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-pencil me-1"></i>Edit
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No categories found. 
+                    {% if user.is_superuser_type %}
+                        <a href="/admin/operations/operationcategory/add/">Create your first category</a>.
+                    {% else %}
+                        Contact an administrator to add categories.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

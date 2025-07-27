@@ -19,7 +19,7 @@ class JobForm(forms.ModelForm):
             'paper_type', 'end_size', 'printing_size', 'selling_size',
             'parts_of_selling_size', 'n_up', 'colors_front', 'colors_back',
             'special_colors', 'number_of_pages', 'n_up_signatures',
-            'notes', 'variant_quantities'
+            'notes', 'is_template', 'template_name'
         ]
         widgets = {
             'client': forms.Select(attrs={'class': 'form-select'}),
@@ -39,8 +39,9 @@ class JobForm(forms.ModelForm):
             'n_up_signatures': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
                                            'placeholder': 'Client remarks, agreements, special requirements...'}),
-            'variant_quantities': forms.TextInput(
-                attrs={'class': 'form-control', 'placeholder': 'e.g., 2000,5000,10000'}),
+            'is_template': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'template_name': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'Enter template name'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -58,27 +59,14 @@ class JobForm(forms.ModelForm):
         # Add help text
         self.fields['parts_of_selling_size'].help_text = "How many printing sheets fit in one purchased sheet"
         self.fields['n_up'].help_text = "Number of items per printing sheet"
-        self.fields['variant_quantities'].help_text = "Additional quantities for pricing (comma-separated)"
 
         # Make book-specific fields conditional
         self.fields['number_of_pages'].required = False
         self.fields['n_up_signatures'].required = False
+        
+        # Make template fields conditional
+        self.fields['template_name'].required = False
 
-    def clean_variant_quantities(self):
-        """Validate variant quantities format."""
-        value = self.cleaned_data.get('variant_quantities', '')
-        if not value:
-            return value
-
-        try:
-            quantities = [int(q.strip()) for q in value.split(',') if q.strip()]
-            if len(quantities) > 5:
-                raise ValidationError("Maximum 5 variant quantities allowed.")
-            if any(q <= 0 for q in quantities):
-                raise ValidationError("All quantities must be positive numbers.")
-            return ','.join(map(str, quantities))
-        except ValueError:
-            raise ValidationError("Please enter comma-separated numbers (e.g., 2000,5000,10000)")
 
     def clean(self):
         """Additional form validation."""
@@ -95,6 +83,16 @@ class JobForm(forms.ModelForm):
                 self.add_error('n_up_signatures', 'N-up signatures is required for books.')
 
         return cleaned_data
+
+    def clean_template_name(self):
+        """Validate template name if is_template is checked."""
+        template_name = self.cleaned_data.get('template_name')
+        is_template = self.cleaned_data.get('is_template')
+        
+        if is_template and not template_name:
+            raise ValidationError("Template name is required when saving as template.")
+        
+        return template_name
 
 
 class JobOperationForm(forms.ModelForm):
@@ -119,39 +117,3 @@ class JobOperationForm(forms.ModelForm):
         if job:
             next_order = job.job_operations.count() + 1
             self.initial['sequence_order'] = next_order
-
-
-class ClientForm(forms.ModelForm):
-    """Form for creating and editing clients."""
-
-    class Meta:
-        model = Client
-        fields = [
-            'company_name', 'contact_person', 'email', 'phone', 'mobile',
-            'website', 'address_line_1', 'address_line_2', 'city',
-            'state_province', 'postal_code', 'country', 'tax_number',
-            'payment_terms', 'credit_limit', 'discount_percentage',
-            'notes', 'special_requirements', 'is_vip'
-        ]
-        widgets = {
-            'company_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'contact_person': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'mobile': forms.TextInput(attrs={'class': 'form-control'}),
-            'website': forms.URLInput(attrs={'class': 'form-control'}),
-            'address_line_1': forms.TextInput(attrs={'class': 'form-control'}),
-            'address_line_2': forms.TextInput(attrs={'class': 'form-control'}),
-            'city': forms.TextInput(attrs={'class': 'form-control'}),
-            'state_province': forms.TextInput(attrs={'class': 'form-control'}),
-            'postal_code': forms.TextInput(attrs={'class': 'form-control'}),
-            'country': forms.TextInput(attrs={'class': 'form-control'}),
-            'tax_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'payment_terms': forms.Select(attrs={'class': 'form-select'}),
-            'credit_limit': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'discount_percentage': forms.NumberInput(
-                attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'special_requirements': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'is_vip': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }

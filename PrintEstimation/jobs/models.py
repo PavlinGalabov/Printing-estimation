@@ -126,11 +126,6 @@ class Job(models.Model):
     )
 
     # Quantity variants for pricing
-    variant_quantities = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text="Comma-separated additional quantities for pricing (e.g., '2000,5000')"
-    )
 
     # Calculated totals (populated after calculation)
     total_material_cost = models.DecimalField(
@@ -237,31 +232,74 @@ class Job(models.Model):
             return timedelta(minutes=self.total_time_minutes)
         return None
 
-    def get_variant_quantities_list(self):
-        """Parse variant quantities string into list of integers."""
-        if not self.variant_quantities:
-            return []
-        try:
-            return [int(q.strip()) for q in self.variant_quantities.split(',') if q.strip()]
-        except ValueError:
-            return []
 
     def save(self, *args, **kwargs):
         # Generate job number if not set
         if not self.job_number and not self.is_template:
-            self.job_number = self._generate_job_number()
-        super().save(*args, **kwargs)
+            max_retries = 3
+            for retry in range(max_retries):
+                try:
+                    self.job_number = self._generate_job_number()
+                    super().save(*args, **kwargs)
+                    break
+                except Exception as e:
+                    if retry == max_retries - 1:
+                        # On final retry, use UUID fallback
+                        import uuid
+                        from django.utils import timezone
+                        year = timezone.now().year
+                        unique_id = str(uuid.uuid4())[:8].upper()
+                        self.job_number = f"JOB-{year}-{unique_id}"
+                        super().save(*args, **kwargs)
+                        break
+                    # Wait a tiny bit before retry
+                    import time
+                    time.sleep(0.01)
+        else:
+            super().save(*args, **kwargs)
 
     def _generate_job_number(self):
         """Generate unique job number."""
         from django.utils import timezone
+        from django.db import transaction
+        import re
+        
         year = timezone.now().year
-        # Get the count of jobs created this year
-        count = Job.objects.filter(
-            created_at__year=year,
+        
+        # Get the highest existing job number for this year
+        existing_jobs = Job.objects.filter(
+            job_number__startswith=f"JOB-{year}-",
             is_template=False
-        ).count() + 1
-        return f"JOB-{year}-{count:04d}"
+        ).values_list('job_number', flat=True)
+        
+        if existing_jobs:
+            # Extract numbers from existing job numbers and find the maximum
+            numbers = []
+            for job_num in existing_jobs:
+                match = re.search(r'JOB-\d{4}-(\d{4})', job_num)
+                if match:
+                    numbers.append(int(match.group(1)))
+            
+            if numbers:
+                next_number = max(numbers) + 1
+            else:
+                next_number = 1
+        else:
+            next_number = 1
+        
+        # Try to create unique job number with retry mechanism
+        max_attempts = 100
+        for attempt in range(max_attempts):
+            job_number = f"JOB-{year}-{next_number + attempt:04d}"
+            
+            # Check if this number already exists
+            if not Job.objects.filter(job_number=job_number).exists():
+                return job_number
+        
+        # Fallback: use timestamp if all attempts failed
+        import time
+        timestamp = int(time.time() * 1000) % 10000
+        return f"JOB-{year}-{timestamp:04d}"
 
 
 class JobOperation(models.Model):
@@ -290,6 +328,13 @@ class JobOperation(models.Model):
     makeready_time_minutes = models.PositiveIntegerField()
     cleaning_time_minutes = models.PositiveIntegerField(default=0)
     sheets_per_minute = models.PositiveIntegerField(default=1)
+
+    # Dynamic operation parameters (e.g., cut pieces, fold count)
+    operation_parameters = models.JSONField(
+        blank=True, 
+        null=True,
+        help_text="Dynamic parameters for this operation (e.g., {'cut_pieces': 4, 'fold_count': 2})"
+    )
 
     # Quantities for this operation step
     quantity_before = models.PositiveIntegerField(

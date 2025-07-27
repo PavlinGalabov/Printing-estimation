@@ -9,6 +9,7 @@ from django.views.generic import (
 )
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
+from django.http import JsonResponse
 from .models import (
     Operation, OperationCategory, PaperType,
     PaperSize,
@@ -55,31 +56,85 @@ class OperationDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'operation'
 
 
-class OperationCreateView(SuperuserRequiredMixin, CreateView):
+class OperationCreateView(LoginRequiredMixin, CreateView):
     """Create new operation."""
     model = Operation
     template_name = 'operations/operation_form.html'
     fields = [
-        'name', 'category', 'description', 'pricing_type', 'makeready_price',
-        'price_per_unit', 'outsourcing_rate', 'makeready_time_minutes',
-        'time_per_unit_seconds', 'divides_quantity_by', 'multiplies_quantity_by',
-        'requires_colors', 'is_active'
+        'name', 'category', 'description', 'makeready_price', 'price_per_sheet',
+        'plate_price', 'base_waste_sheets', 'waste_percentage', 'makeready_time_minutes',
+        'cleaning_time_minutes', 'sheets_per_minute', 'divides_quantity_by', 
+        'multiplies_quantity_by', 'uses_colors', 'uses_front_colors_only', 'is_active'
     ]
+
+    def post(self, request, *args, **kwargs):
+        # Handle AJAX requests for inline operation creation
+        if request.content_type == 'application/json':
+            import json
+            try:
+                data = json.loads(request.body)
+                
+                # Check if operation with same name and category already exists
+                if Operation.objects.filter(name=data['name'], category_id=data['category']).exists():
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'An operation named "{data["name"]}" already exists in this category. Please choose a different name.'
+                    })
+                
+                # Create operation with provided data
+                operation = Operation.objects.create(
+                    name=data['name'],
+                    category_id=data['category'],
+                    description=data.get('description', ''),
+                    makeready_price=data['makeready_price'],
+                    price_per_sheet=data['price_per_sheet'],
+                    plate_price=data.get('plate_price', 0),
+                    uses_colors=data.get('uses_colors', False),
+                    is_active=data.get('is_active', True),
+                    # Set defaults for other fields
+                    base_waste_sheets=0,
+                    waste_percentage=0,
+                    makeready_time_minutes=0,
+                    cleaning_time_minutes=0,
+                    sheets_per_minute=1,
+                    divides_quantity_by=1,
+                    multiplies_quantity_by=1,
+                    uses_front_colors_only=False
+                )
+                
+                return JsonResponse({
+                    'success': True,
+                    'operation_id': operation.id,
+                    'operation_name': operation.name,
+                    'message': f'Operation "{operation.name}" created successfully!'
+                })
+                
+            except Exception as e:
+                import traceback
+                error_details = traceback.format_exc()
+                print(f"Operation creation error: {error_details}")
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Error creating operation: {str(e)}'
+                })
+        
+        # Handle regular form submission
+        return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         messages.success(self.request, f'Operation "{form.instance.name}" created successfully!')
         return super().form_valid(form)
 
 
-class OperationUpdateView(SuperuserRequiredMixin, UpdateView):
+class OperationUpdateView(LoginRequiredMixin, UpdateView):
     """Update existing operation."""
     model = Operation
     template_name = 'operations/operation_form.html'
     fields = [
-        'name', 'category', 'description', 'pricing_type', 'makeready_price',
-        'price_per_unit', 'outsourcing_rate', 'makeready_time_minutes',
-        'time_per_unit_seconds', 'divides_quantity_by', 'multiplies_quantity_by',
-        'requires_colors', 'is_active'
+        'name', 'category', 'description', 'makeready_price', 'price_per_sheet',
+        'plate_price', 'base_waste_sheets', 'waste_percentage', 'makeready_time_minutes',
+        'cleaning_time_minutes', 'sheets_per_minute', 'divides_quantity_by', 
+        'multiplies_quantity_by', 'uses_colors', 'uses_front_colors_only', 'is_active'
     ]
 
     def form_valid(self, form):
@@ -87,7 +142,7 @@ class OperationUpdateView(SuperuserRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class OperationDeleteView(SuperuserRequiredMixin, DeleteView):
+class OperationDeleteView(LoginRequiredMixin, DeleteView):
     """Delete operation."""
     model = Operation
     template_name = 'operations/operation_confirm_delete.html'
@@ -101,7 +156,7 @@ class OperationDeleteView(SuperuserRequiredMixin, DeleteView):
 
 # Category Views
 
-class CategoryListView(SuperuserRequiredMixin, ListView):
+class CategoryListView(LoginRequiredMixin, ListView):
     """List all operation categories."""
     model = OperationCategory
     template_name = 'operations/category_list.html'
@@ -116,7 +171,7 @@ class CategoryListView(SuperuserRequiredMixin, ListView):
 class PaperTypeListView(LoginRequiredMixin, ListView):
     """List all paper types."""
     model = PaperType
-    template_name = 'operations/paper_type_list.html'
+    template_name = 'operations/papertype_list.html'
     context_object_name = 'paper_types'
 
     def get_queryset(self):
@@ -128,7 +183,7 @@ class PaperTypeListView(LoginRequiredMixin, ListView):
 class PaperSizeListView(LoginRequiredMixin, ListView):
     """List all paper sizes."""
     model = PaperSize
-    template_name = 'operations/paper_size_list.html'
+    template_name = 'operations/papersize_list.html'
     context_object_name = 'paper_sizes'
 
     def get_queryset(self):

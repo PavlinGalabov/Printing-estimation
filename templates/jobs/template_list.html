@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load job_filters %}
+
+{% block title %}Job Templates - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-files me-2"></i>Job Templates</h2>
+                <a href="{% url 'jobs:create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Create New Template
+                </a>
+            </div>
+
+            {% if templates %}
+                <div class="row">
+                    {% for template in templates %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-info">Template</span>
+                                    <span class="badge bg-secondary">{{ template.order_type|title }}</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ template.template_name|default:template.order_name }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ template.order_name }}</h6>
+                                    
+                                    <div class="row small mb-3">
+                                        <div class="col-6">
+                                            <strong>Paper:</strong><br>
+                                            <small class="text-muted">{{ template.paper_type.name }}</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Size:</strong><br>
+                                            <small class="text-muted">{{ template.end_size.name }}</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="row small mb-3">
+                                        <div class="col-6">
+                                            <strong>Colors:</strong><br>
+                                            <small class="text-muted">{{ template.colors_front }}/{{ template.colors_back }}</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>N-up:</strong><br>
+                                            <small class="text-muted">{{ template.n_up }}</small>
+                                        </div>
+                                    </div>
+
+                                    {% if template.notes %}
+                                        <p class="card-text">
+                                            <small class="text-muted">{{ template.notes|truncatewords:15 }}</small>
+                                        </p>
+                                    {% endif %}
+
+                                    {% if template.total_cost %}
+                                        <div class="alert alert-light border mt-3 mb-0">
+                                            <small>
+                                                <strong>Last Calculated:</strong> ${{ template.total_cost|floatformat:2 }}
+                                                {% if template.quantity %}
+                                                    ({{ template.quantity }} pcs)
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="{% url 'jobs:detail' template.pk %}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i>View
+                                        </a>
+                                        <a href="{% url 'jobs:edit' template.pk %}" 
+                                           class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-pencil me-1"></i>Edit
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-success btn-sm" 
+                                                onclick="useTemplate({{ template.pk }})">
+                                            <i class="bi bi-arrow-right me-1"></i>Use
+                                        </button>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Created: {{ template.created_at|date:"M d, Y" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if is_paginated %}
+                    <nav aria-label="Templates pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">&laquo; First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No templates found. <a href="{% url 'jobs:create' %}">Create your first template</a> by checking the "Save as template" option when creating a job.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Use Template Modal -->
+<div class="modal fade" id="useTemplateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Use Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Do you want to create a new job based on this template?</p>
+                <p class="text-muted">All template settings will be copied to a new job that you can modify as needed.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="useTemplateBtn" class="btn btn-primary">
+                    <i class="bi bi-arrow-right me-1"></i>Create Job from Template
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function useTemplate(templateId) {
+    const modal = new bootstrap.Modal(document.getElementById('useTemplateModal'));
+    const useBtn = document.getElementById('useTemplateBtn');
+    useBtn.href = "{% url 'jobs:create' %}?template=" + templateId;
+    modal.show();
+}
+</script>
+{% endblock %}

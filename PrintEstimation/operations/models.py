@@ -130,7 +130,7 @@ class Operation(models.Model):
     def __str__(self):
         return f"{self.category.name} - {self.name}"
 
-    def calculate_cost(self, job_params):
+    def calculate_cost(self, job_params, operation_parameters=None):
         """
         Calculate cost for this operation based on job parameters.
 
@@ -141,25 +141,29 @@ class Operation(models.Model):
                 - colors_front: int
                 - colors_back: int
                 - current_quantity: int (sheets going into this operation)
+            operation_parameters: dict with dynamic parameters (e.g., {'cut_pieces': 4})
 
         Returns:
             dict with 'total_cost', 'waste_sheets', 'quantity_after'
         """
+        operation_parameters = operation_parameters or {}
         current_quantity = job_params.get('current_quantity', job_params['quantity'])
 
         # Calculate waste sheets if this operation generates waste
+        # Waste should be calculated based on print_run (sheets), not current_quantity
+        print_run = job_params['print_run']
         waste_sheets = 0
         if self.base_waste_sheets > 0 or self.waste_percentage > 0:
             if self.uses_colors:
                 total_colors = job_params['colors_front'] + job_params['colors_back']
                 waste_sheets = total_colors * (
                     self.base_waste_sheets +
-                    float(self.waste_percentage) * current_quantity
+                    float(self.waste_percentage) * print_run
                 )
             else:
                 waste_sheets = (
                     self.base_waste_sheets +
-                    float(self.waste_percentage) * current_quantity
+                    float(self.waste_percentage) * print_run
                 )
             waste_sheets = int(waste_sheets)
 
@@ -167,25 +171,40 @@ class Operation(models.Model):
         processing_quantity = current_quantity + waste_sheets
 
         # Calculate cost
-        total_cost = float(self.makeready_price)
-
         if self.uses_colors:
-            # For printing operations
+            # For printing operations - each color requires makeready, plate, and processing
             total_colors = job_params['colors_front'] + job_params['colors_back']
-            total_cost += total_colors * (
+            total_cost = total_colors * (
+                float(self.makeready_price) +
                 float(self.plate_price) +
                 processing_quantity * float(self.price_per_sheet)
             )
         else:
-            # For other operations
-            total_cost += processing_quantity * float(self.price_per_sheet)
+            # For other operations - single makeready + processing
+            base_cost = float(self.makeready_price) + processing_quantity * float(self.price_per_sheet)
+            
+            # Apply cut pricing multiplier if this is a cutting operation
+            if 'cut_pieces' in operation_parameters:
+                cut_pieces = operation_parameters['cut_pieces']
+                # Price = makeready + (processing_quantity × price_per_sheet × number_of_cuts)
+                total_cost = float(self.makeready_price) + processing_quantity * float(self.price_per_sheet) * cut_pieces
+            else:
+                total_cost = base_cost
 
-        # Calculate quantity after this operation
-        quantity_after = current_quantity
-        if self.divides_quantity_by > 1:
-            quantity_after = current_quantity // self.divides_quantity_by
-        elif self.multiplies_quantity_by > 1:
-            quantity_after = current_quantity * self.multiplies_quantity_by
+        # Calculate quantity after this operation (subtract waste, then apply multipliers/dividers)
+        quantity_after = current_quantity - waste_sheets
+        
+        # Apply dynamic parameters first (e.g., cut_pieces)
+        if 'cut_pieces' in operation_parameters:
+            quantity_after = quantity_after * operation_parameters['cut_pieces']
+        elif 'divide_by' in operation_parameters:
+            quantity_after = quantity_after // operation_parameters['divide_by']
+        else:
+            # Use static operation settings as fallback
+            if self.divides_quantity_by > 1:
+                quantity_after = quantity_after // self.divides_quantity_by
+            elif self.multiplies_quantity_by > 1:
+                quantity_after = quantity_after * self.multiplies_quantity_by
 
         return {
             'total_cost': total_cost,
@@ -194,28 +213,34 @@ class Operation(models.Model):
             'quantity_after': quantity_after
         }
 
-    def calculate_time(self, job_params):
+    def calculate_time(self, job_params, operation_parameters=None):
         """
         Calculate time for this operation based on job parameters.
+
+        Args:
+            operation_parameters: dict with dynamic parameters (e.g., {'cut_pieces': 4})
 
         Returns:
             int: total time in minutes
         """
+        operation_parameters = operation_parameters or {}
         current_quantity = job_params.get('current_quantity', job_params['quantity'])
 
         # Calculate waste and processing quantity (same as cost calculation)
+        # Use print_run for waste calculation, not current_quantity
+        print_run = job_params['print_run']
         waste_sheets = 0
         if self.base_waste_sheets > 0 or self.waste_percentage > 0:
             if self.uses_colors:
                 total_colors = job_params['colors_front'] + job_params['colors_back']
                 waste_sheets = total_colors * (
                     self.base_waste_sheets +
-                    float(self.waste_percentage) * current_quantity
+                    float(self.waste_percentage) * print_run
                 )
             else:
                 waste_sheets = (
                     self.base_waste_sheets +
-                    float(self.waste_percentage) * current_quantity
+                    float(self.waste_percentage) * print_run
                 )
             waste_sheets = int(waste_sheets)
 
@@ -244,6 +269,11 @@ class Operation(models.Model):
                 total_time += processing_quantity / self.sheets_per_minute
 
         return int(total_time)
+
+    def get_absolute_url(self):
+        """Return URL for operation detail view."""
+        from django.urls import reverse
+        return reverse('operations:detail', kwargs={'pk': self.pk})
 
 
 class PaperType(models.Model):
