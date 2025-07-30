@@ -50,6 +50,12 @@ class User(AbstractUser):
             return self.get_full_name()
         return self.username
 
+    def is_staff_user(self):
+        """Check if user has staff-level permissions."""
+        return (self.user_type == 'staff' or 
+                self.is_staff or 
+                self.is_superuser)
+
     @property
     def is_superuser_type(self):
         """Check if user is superuser type."""

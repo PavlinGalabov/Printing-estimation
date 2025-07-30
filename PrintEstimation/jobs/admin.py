@@ -31,18 +31,20 @@ class JobVariantInline(admin.TabularInline):
 class JobAdmin(admin.ModelAdmin):
     """Admin for Job model."""
     list_display = [
-        'job_number', 'client', 'order_type', 'quantity',
-        'status', 'is_template', 'total_cost', 'created_at'
+        'job_number', 'client', 'order_type', 'quantity', 'deadline',
+        'status', 'is_template', 'total_cost', 'paper_cost', 'created_by', 'created_at'
     ]
     list_filter = [
         'status', 'order_type', 'is_template', 'created_at',
-        'paper_type'
+        'paper_type', 'created_by', 'colors_front', 'colors_back'
     ]
     search_fields = [
-        'job_number', 'client__company_name', 'order_name', 'template_name'
+        'job_number', 'client__company_name', 'order_name', 'template_name', 'notes'
     ]
     ordering = ['-created_at']
     date_hierarchy = 'created_at'
+    list_per_page = 30
+    list_editable = ['status']
 
     inlines = [JobOperationInline, JobVariantInline]
 
@@ -50,13 +52,13 @@ class JobAdmin(admin.ModelAdmin):
         ('Job Information', {
             'fields': (
                 'job_number', 'client', 'order_type', 'order_name',
-                'quantity', 'status', 'notes'
+                'quantity', 'deadline', 'status', 'notes'
             )
         }),
         ('Paper Specifications', {
             'fields': (
-                'paper_type', 'end_size', 'printing_size', 'selling_size',
-                'parts_of_selling_size'
+                'paper_type', 'end_size', 'custom_end_width', 'custom_end_height',
+                'printing_size', 'selling_size', 'parts_of_selling_size'
             )
         }),
         ('Production Settings', {
@@ -78,9 +80,9 @@ class JobAdmin(admin.ModelAdmin):
         }),
         ('Calculated Results', {
             'fields': (
-                'total_material_cost', 'total_labor_cost', 'total_outsourcing_cost',
-                'total_time_minutes', 'print_run', 'waste_sheets', 'sheets_to_buy',
-                'paper_weight_kg'
+                'total_cost', 'total_material_cost', 'total_labor_cost', 'total_outsourcing_cost',
+                'paper_cost', 'total_time_minutes', 'print_run', 'waste_sheets', 
+                'sheets_to_buy', 'paper_weight_kg'
             ),
             'classes': ('collapse',)
         }),
@@ -92,7 +94,7 @@ class JobAdmin(admin.ModelAdmin):
 
     readonly_fields = ['created_at', 'updated_at', 'calculated_at']
 
-    actions = ['mark_as_sent', 'mark_as_approved', 'create_templates']
+    actions = ['mark_as_sent', 'mark_as_approved', 'create_templates', 'duplicate_jobs']
 
     def mark_as_sent(self, request, queryset):
         """Mark selected jobs as sent to client."""
@@ -112,6 +114,18 @@ class JobAdmin(admin.ModelAdmin):
                 job.template_name = f"{job.order_type.title()} Template"
                 job.save()
     create_templates.short_description = "Convert to templates"
+
+    def duplicate_jobs(self, request, queryset):
+        """Duplicate selected jobs."""
+        count = 0
+        for job in queryset:
+            job.pk = None
+            job.job_number = ''
+            job.status = 'draft'
+            job.save()
+            count += 1
+        self.message_user(request, f"Duplicated {count} jobs")
+    duplicate_jobs.short_description = "Duplicate selected jobs"
 
 
 @admin.register(JobOperation)

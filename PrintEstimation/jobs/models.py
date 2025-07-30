@@ -21,10 +21,12 @@ class Job(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('calculated', 'Calculated'),
-        ('sent', 'Sent to Client'),
-        ('approved', 'Approved'),
+        ('waiting_manager', 'Waiting Manager Approval / Review'),
+        ('waiting_client', 'Waiting for Client Approval'), 
+        ('approved', 'Approved Orders'),
+        ('urgent', 'Urgent Orders'),
+        ('finished', 'Finished Order'),
         ('rejected', 'Rejected'),
-        ('archived', 'Archived'),
     ]
 
     ORDER_TYPES = [
@@ -66,7 +68,24 @@ class Job(models.Model):
         PaperSize,
         on_delete=models.PROTECT,
         related_name='jobs_end_size',
-        help_text="Final product size"
+        help_text="Final product size",
+        null=True,
+        blank=True
+    )
+    # Custom end size dimensions (for non-standard sizes)
+    custom_end_width = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Custom end size width in cm"
+    )
+    custom_end_height = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Custom end size height in cm"
     )
     printing_size = models.ForeignKey(
         PaperSize,
@@ -78,11 +97,11 @@ class Job(models.Model):
         PaperSize,
         on_delete=models.PROTECT,
         related_name='jobs_selling_size',
-        help_text="Size paper is purchased in"
+        help_text="Parent sheet size that paper is purchased in"
     )
     parts_of_selling_size = models.PositiveIntegerField(
         default=1,
-        help_text="How many printing sheets fit in one purchased sheet"
+        help_text="How many printing sheets fit in one parent sheet"
     )
 
     # Production settings
@@ -125,9 +144,24 @@ class Job(models.Model):
         help_text="Client remarks, agreements, and special requirements"
     )
 
+    # Job scheduling
+    deadline = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Job completion deadline"
+    )
+
     # Quantity variants for pricing
 
     # Calculated totals (populated after calculation)
+    total_cost = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        help_text="Total job cost (sum of all costs)"
+    )
     total_material_cost = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -169,7 +203,14 @@ class Job(models.Model):
     sheets_to_buy = models.PositiveIntegerField(
         null=True,
         blank=True,
-        help_text="Total sheets to purchase"
+        help_text="Total parent sheets to purchase"
+    )
+    paper_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Total cost of paper"
     )
     paper_weight_kg = models.DecimalField(
         max_digits=10,
@@ -213,17 +254,29 @@ class Job(models.Model):
     def get_absolute_url(self):
         return reverse('jobs:detail', kwargs={'pk': self.pk})
 
-    @property
-    def total_cost(self):
-        """Calculate total cost from all components."""
-        if all([self.total_material_cost, self.total_labor_cost, self.total_outsourcing_cost]):
-            return self.total_material_cost + self.total_labor_cost + self.total_outsourcing_cost
-        return None
 
     @property
     def total_colors(self):
         """Total number of colors (front + back + special)."""
         return self.colors_front + self.colors_back + self.special_colors
+
+    @property
+    def effective_end_size_name(self):
+        """Get the effective end size name (custom or standard)."""
+        if self.custom_end_width and self.custom_end_height:
+            return f"{self.custom_end_width}×{self.custom_end_height} cm (Custom)"
+        elif self.end_size:
+            return self.end_size.name
+        return "Not specified"
+
+    @property
+    def effective_end_size_area_cm2(self):
+        """Get the effective end size area in cm²."""
+        if self.custom_end_width and self.custom_end_height:
+            return float(self.custom_end_width * self.custom_end_height)
+        elif self.end_size:
+            return self.end_size.area_cm2
+        return 0
 
     @property
     def total_time(self):

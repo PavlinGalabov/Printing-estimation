@@ -20,10 +20,13 @@
                     <h1 class="display-6 mb-1">{{ job.order_name }}</h1>
                     <div class="d-flex align-items-center">
                         <span class="badge 
-                            {% if job.status == 'draft' %}bg-warning text-dark
+                            {% if job.status == 'draft' %}bg-secondary
                             {% elif job.status == 'calculated' %}bg-info
-                            {% elif job.status == 'sent' %}bg-primary
+                            {% elif job.status == 'waiting_manager' %}bg-warning text-dark
+                            {% elif job.status == 'waiting_client' %}bg-primary
                             {% elif job.status == 'approved' %}bg-success
+                            {% elif job.status == 'urgent' %}bg-danger
+                            {% elif job.status == 'finished' %}bg-dark
                             {% elif job.status == 'rejected' %}bg-danger
                             {% else %}bg-secondary{% endif %} me-2">
                             {{ job.get_status_display }}
@@ -35,6 +38,41 @@
                 </div>
                 
                 <div class="btn-group">
+                    <!-- Status Change Dropdown -->
+                    <div class="btn-group me-2" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-arrow-up-right-circle me-1"></i>Change Status
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><h6 class="dropdown-header">Update Job Status</h6></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeStatus('draft')">
+                                <i class="bi bi-circle me-2 text-secondary"></i>Draft
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeStatus('calculated')">
+                                <i class="bi bi-circle me-2 text-info"></i>Calculated
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeStatus('waiting_manager')">
+                                <i class="bi bi-circle me-2 text-warning"></i>Waiting Manager Approval
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeStatus('waiting_client')">
+                                <i class="bi bi-circle me-2 text-primary"></i>Waiting for Client Approval
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeStatus('approved')">
+                                <i class="bi bi-circle me-2 text-success"></i>Approved Orders
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeStatus('urgent')">
+                                <i class="bi bi-circle me-2 text-danger"></i>Urgent Orders
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeStatus('finished')">
+                                <i class="bi bi-circle me-2 text-dark"></i>Finished Order
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeStatus('rejected')">
+                                <i class="bi bi-circle me-2 text-danger"></i>Rejected
+                            </a></li>
+                        </ul>
+                    </div>
+                    
                     <a href="{% url 'jobs:edit' job.pk %}" class="btn btn-outline-secondary">
                         <i class="bi bi-pencil me-1"></i>Edit
                     </a>
@@ -99,6 +137,19 @@
                                     <td><strong>N-up:</strong></td>
                                     <td>{{ job.n_up }} per sheet</td>
                                 </tr>
+                                {% if job.deadline %}
+                                <tr>
+                                    <td><strong>Deadline:</strong></td>
+                                    <td>
+                                        {{ job.deadline|date:"M d, Y H:i" }}
+                                        {% if job.deadline < now %}
+                                            <span class="badge bg-danger ms-2">Overdue</span>
+                                        {% elif job.deadline|timeuntil < "1 day" %}
+                                            <span class="badge bg-warning text-dark ms-2">Due Soon</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
                             </table>
                         </div>
                         <div class="col-md-6">
@@ -113,11 +164,15 @@
                                 </tr>
                                 <tr>
                                     <td><strong>End Size:</strong></td>
-                                    <td>{{ job.end_size.name }}</td>
+                                    <td>{{ job.effective_end_size_name }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Print Size:</strong></td>
                                     <td>{{ job.printing_size.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Parent Size:</strong></td>
+                                    <td>{{ job.selling_size.name }} ({{ job.parts_of_selling_size }}× printing)</td>
                                 </tr>
                             </table>
                         </div>
@@ -145,13 +200,13 @@
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <div class="text-center p-3 bg-primary text-white rounded">
                                 <h4 class="mb-1">€{{ job.total_cost|floatformat:2 }}</h4>
                                 <small>Total Cost</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <div class="text-center p-3 bg-info text-white rounded">
                                 <h4 class="mb-1">
                                     {% if job.total_cost and job.quantity %}
@@ -163,16 +218,41 @@
                                 <small>Cost per Piece</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <div class="text-center p-3 bg-success text-white rounded">
                                 <h4 class="mb-1">{{ job.total_time_minutes|default:"0" }}</h4>
-                                <small>Minutes</small>
+                                <small>Total Minutes</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <div class="text-center p-3 bg-warning text-dark rounded">
                                 <h4 class="mb-1">{{ job.sheets_to_buy|default:"0" }}</h4>
-                                <small>Sheets to Buy</small>
+                                <small>Parent Sheets</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Paper Cost Breakdown -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-muted">Paper Cost</h5>
+                                    <h3 class="text-primary">€{{ job.paper_cost|floatformat:2|default:"0.00" }}</h3>
+                                    <small class="text-muted">
+                                        {{ job.sheets_to_buy|default:"0" }} sheets × {{ job.paper_weight_kg|floatformat:2|default:"0.00" }}kg
+                                        {% if job.paper_type %}@ €{{ job.paper_type.price_per_kg|floatformat:2 }}/kg{% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-muted">Operations Cost</h5>
+                                    <h3 class="text-success">€{{ job.total_material_cost|sub:job.paper_cost|floatformat:2|default:"0.00" }}</h3>
+                                    <small class="text-muted">All printing operations</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -420,4 +500,50 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Fix dropdown z-index to appear above other elements */
+.dropdown-menu {
+    z-index: 9999 !important;
+}
+.btn-group .dropdown-menu {
+    z-index: 9999 !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function changeStatus(newStatus) {
+    if (confirm('Are you sure you want to change the job status?')) {
+        fetch(`{% url 'jobs:change_status' job.pk %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'status': newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Reload to show updated status
+            } else {
+                alert('Error changing status: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while changing the status.');
+        });
+    }
+}
+</script>
+
+<!-- CSRF Token for AJAX requests -->
+{% csrf_token %}
 {% endblock %}

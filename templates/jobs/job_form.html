@@ -124,7 +124,7 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-8">
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.order_name.id_for_label }}" class="form-label">
                                         <i class="bi bi-card-text me-1"></i>Order Name *
@@ -135,7 +135,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label for="{{ form.quantity.id_for_label }}" class="form-label">
                                         <i class="bi bi-123 me-1"></i>Quantity *
@@ -143,6 +143,31 @@
                                     {{ form.quantity }}
                                     {% if form.quantity.errors %}
                                         <div class="text-danger small">{{ form.quantity.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.deadline.id_for_label }}" class="form-label">
+                                        <i class="bi bi-calendar-event me-1"></i>Deadline
+                                    </label>
+                                    {{ form.deadline }}
+                                    {% if form.deadline.errors %}
+                                        <div class="text-danger small">{{ form.deadline.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                        <i class="bi bi-chat-text me-1"></i>Notes
+                                    </label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="text-danger small">{{ form.notes.errors.0 }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -171,10 +196,28 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.end_size.id_for_label }}" class="form-label">End Size *</label>
-                                    {{ form.end_size }}
-                                    {% if form.end_size.errors %}
-                                        <div class="text-danger small">{{ form.end_size.errors.0 }}</div>
+                                    <label class="form-label">End Size *</label>
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <label for="{{ form.end_size.id_for_label }}" class="form-label small">Standard Size</label>
+                                            {{ form.end_size }}
+                                        </div>
+                                    </div>
+                                    <div class="text-center small text-muted my-2">OR</div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label for="{{ form.custom_end_width.id_for_label }}" class="form-label small">Custom Width (cm)</label>
+                                            {{ form.custom_end_width }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label for="{{ form.custom_end_height.id_for_label }}" class="form-label small">Custom Height (cm)</label>
+                                            {{ form.custom_end_height }}
+                                        </div>
+                                    </div>
+                                    {% if form.end_size.errors or form.custom_end_width.errors or form.custom_end_height.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.end_size.errors.0|default:form.custom_end_width.errors.0|default:form.custom_end_height.errors.0 }}
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -183,16 +226,8 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.printing_size.id_for_label }}" class="form-label">Printing Size *</label>
-                                    {{ form.printing_size }}
-                                    {% if form.printing_size.errors %}
-                                        <div class="text-danger small">{{ form.printing_size.errors.0 }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="{{ form.selling_size.id_for_label }}" class="form-label">Selling Size *</label>
+                                    <label for="{{ form.selling_size.id_for_label }}" class="form-label">Parent Size *</label>
+                                    <small class="text-muted d-block">Sheet size that paper is purchased in</small>
                                     {{ form.selling_size }}
                                     {% if form.selling_size.errors %}
                                         <div class="text-danger small">{{ form.selling_size.errors.0 }}</div>
@@ -201,13 +236,21 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.parts_of_selling_size.id_for_label }}" class="form-label">
-                                        Parts of Selling Size *
-                                    </label>
+                                    <label for="{{ form.parts_of_selling_size.id_for_label }}" class="form-label">Parts of Parent Size *</label>
+                                    <small class="text-muted d-block">How many printing sheets fit in one parent sheet</small>
                                     {{ form.parts_of_selling_size }}
-                                    <div class="form-text">{{ form.parts_of_selling_size.help_text }}</div>
                                     {% if form.parts_of_selling_size.errors %}
                                         <div class="text-danger small">{{ form.parts_of_selling_size.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.printing_size.id_for_label }}" class="form-label">Printing Size *</label>
+                                    <small class="text-muted d-block">Size used for printing</small>
+                                    {{ form.printing_size }}
+                                    {% if form.printing_size.errors %}
+                                        <div class="text-danger small">{{ form.printing_size.errors.0 }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -299,14 +342,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
-                            {{ form.notes }}
-                            {% if form.notes.errors %}
-                                <div class="text-danger small">{{ form.notes.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        
+                        <!-- Notes moved to Job Information section -->
                     </div>
                 </div>
                 

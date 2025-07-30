@@ -29,18 +29,39 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Get user's recent jobs
-        context['recent_jobs'] = Job.objects.filter(
-            created_by=self.request.user,
-            is_template=False
-        ).order_by('-created_at')[:10]
+        # Staff can see all jobs, regular users only their own
+        if self.request.user.is_staff_user():
+            # Staff users see all jobs
+            base_filter = {'is_template': False}
+            templates_filter = {'is_template': True}
+        else:
+            # Regular users see only their jobs
+            base_filter = {'created_by': self.request.user, 'is_template': False}
+            templates_filter = {'created_by': self.request.user, 'is_template': True}
 
-        # Get statistics
+        # Get workflow-based job categories
+        urgent_jobs = Job.objects.filter(**base_filter, status='urgent').order_by('-created_at')
+        approved_jobs = Job.objects.filter(**base_filter, status='approved').order_by('-created_at')
+        waiting_manager_jobs = Job.objects.filter(**base_filter, status='waiting_manager').order_by('-created_at')
+        waiting_client_jobs = Job.objects.filter(**base_filter, status='waiting_client').order_by('-created_at')
+
+        # Get recent jobs (all active statuses)
+        context['recent_jobs'] = Job.objects.filter(
+            **base_filter
+        ).exclude(status__in=['finished', 'rejected']).order_by('-created_at')[:10]
+
+        # Get workflow statistics and job lists
         context.update({
-            'total_jobs': Job.objects.filter(created_by=self.request.user, is_template=False).count(),
-            'total_templates': Job.objects.filter(created_by=self.request.user, is_template=True).count(),
-            'pending_jobs': Job.objects.filter(created_by=self.request.user, status='draft').count(),
-            'sent_jobs': Job.objects.filter(created_by=self.request.user, status='sent').count(),
+            'urgent_jobs': urgent_jobs,
+            'urgent_count': urgent_jobs.count(),
+            'approved_jobs': approved_jobs,
+            'approved_count': approved_jobs.count(),
+            'waiting_manager_jobs': waiting_manager_jobs,
+            'waiting_manager_count': waiting_manager_jobs.count(),
+            'waiting_client_jobs': waiting_client_jobs,
+            'waiting_client_count': waiting_client_jobs.count(),
+            'total_templates': Job.objects.filter(**templates_filter).count(),
+            'total_active_jobs': Job.objects.filter(**base_filter).exclude(status__in=['finished', 'rejected']).count(),
         })
 
         return context
@@ -54,10 +75,14 @@ class JobListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = Job.objects.filter(
-            created_by=self.request.user,
-            is_template=False
-        )
+        # Staff can see all jobs, regular users only see their own
+        if self.request.user.is_staff_user():
+            queryset = Job.objects.filter(is_template=False)
+        else:
+            queryset = Job.objects.filter(
+                created_by=self.request.user,
+                is_template=False
+            )
 
         # Filter by status
         status = self.request.GET.get('status')
@@ -84,11 +109,15 @@ class JobListView(LoginRequiredMixin, ListView):
 class JobDetailView(LoginRequiredMixin, DetailView):
     """Job detail view with calculation breakdown."""
     model = Job
-    template_name = 'jobs/job_detail.html'
+    template_name = 'jobs/job_unified.html'
     context_object_name = 'job'
 
     def get_queryset(self):
-        return Job.objects.filter(created_by=self.request.user)
+        # Staff can view all jobs, regular users only their own
+        if self.request.user.is_staff_user():
+            return Job.objects.all()
+        else:
+            return Job.objects.filter(created_by=self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -99,7 +128,41 @@ class JobDetailView(LoginRequiredMixin, DetailView):
         # Get quantity variants
         context['variants'] = self.object.variants.all().order_by('quantity')
 
+        # Set view mode for template
+        context['view_mode'] = 'detail'
+
         return context
+
+    def post(self, request, *args, **kwargs):
+        """Handle calculation request from detail view."""
+        job = self.get_object()
+
+        try:
+            calculator = PrintingCalculator(job)
+            result = calculator.calculate_job()
+
+            if result['success']:
+                messages.success(request, 'Job calculated successfully!')
+                return JsonResponse({
+                    'success': True,
+                    'total_cost': float(result['total_cost']),
+                    'total_time': result['total_time_formatted'],
+                    'operations_count': len(result['operations'])
+                })
+            else:
+                messages.error(request, result['error'])
+                return JsonResponse({
+                    'success': False,
+                    'error': result['error']
+                })
+
+        except Exception as e:
+            error_msg = f'Calculation error: {str(e)}'
+            messages.error(request, error_msg)
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            })
 
 
 class JobCreateView(LoginRequiredMixin, CreateView):
@@ -123,12 +186,14 @@ class JobCreateView(LoginRequiredMixin, CreateView):
                 
                 # Copy all relevant fields from template
                 initial.update({
-                    'client': template.client,
+                    # 'client': template.client,
                     'order_type': template.order_type,
-                    'order_name': template.order_name,
+                    # 'order_name': template.order_name,
                     'quantity': template.quantity,
                     'paper_type': template.paper_type,
                     'end_size': template.end_size,
+                    'custom_end_width': template.custom_end_width,
+                    'custom_end_height': template.custom_end_height,
                     'printing_size': template.printing_size,
                     'selling_size': template.selling_size,
                     'parts_of_selling_size': template.parts_of_selling_size,
@@ -264,7 +329,11 @@ class JobUpdateView(LoginRequiredMixin, UpdateView):
     
 
     def get_queryset(self):
-        return Job.objects.filter(created_by=self.request.user)
+        # Staff can edit all jobs, regular users only their own
+        if self.request.user.is_staff_user():
+            return Job.objects.all()
+        else:
+            return Job.objects.filter(created_by=self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -284,7 +353,11 @@ class JobDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('jobs:list')
 
     def get_queryset(self):
-        return Job.objects.filter(created_by=self.request.user)
+        # Only superusers can delete jobs, staff cannot
+        if self.request.user.is_superuser:
+            return Job.objects.all()
+        else:
+            return Job.objects.filter(created_by=self.request.user)
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -295,16 +368,23 @@ class JobDeleteView(LoginRequiredMixin, DeleteView):
 class JobCalculateView(LoginRequiredMixin, DetailView):
     """Calculate job costs and generate breakdown."""
     model = Job
-    template_name = 'jobs/job_calculate.html'
+    template_name = 'jobs/job_unified.html'
     context_object_name = 'job'
 
     def get_queryset(self):
-        return Job.objects.filter(created_by=self.request.user)
+        # Staff can calculate all jobs, regular users only their own
+        if self.request.user.is_staff_user():
+            return Job.objects.all()
+        else:
+            return Job.objects.filter(created_by=self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['available_operations'] = Operation.objects.filter(is_active=True).order_by('category__sort_order', 'name')
         context['job_operations'] = self.object.job_operations.all().order_by('sequence_order')
+        
+        # Set view mode for template
+        context['view_mode'] = 'calculate'
+        
         return context
 
     def post(self, request, *args, **kwargs):
@@ -368,6 +448,45 @@ def add_operation_to_job(request, job_id):
             'success': False,
             'error': str(e)
         })
+
+
+@require_POST
+def change_job_status(request, pk):
+    """Change job status via AJAX."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Authentication required'})
+
+    try:
+        # Staff can change status of all jobs, regular users only their own
+        if request.user.is_staff_user():
+            job = get_object_or_404(Job, id=pk)
+        else:
+            job = get_object_or_404(Job, id=pk, created_by=request.user)
+
+        data = json.loads(request.body)
+        new_status = data.get('status')
+
+        # Validate status
+        valid_statuses = [choice[0] for choice in Job.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': 'Invalid status'})
+
+        # Update job status
+        old_status = job.get_status_display()
+        job.status = new_status
+        job.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Status changed from "{old_status}" to "{job.get_status_display()}"',
+            'new_status': new_status,
+            'new_status_display': job.get_status_display()
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @require_POST
@@ -467,10 +586,14 @@ class TemplateListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = Job.objects.filter(
-            created_by=self.request.user,
-            is_template=True
-        )
+        # Staff can see all templates, regular users only see their own
+        if self.request.user.is_staff_user():
+            queryset = Job.objects.filter(is_template=True)
+        else:
+            queryset = Job.objects.filter(
+                created_by=self.request.user,
+                is_template=True
+            )
 
         # Filter by order type
         order_type = self.request.GET.get('type')

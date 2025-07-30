@@ -14,7 +14,7 @@ from PrintEstimation.operations.models import Operation
 class PrintingCalculator:
     """
     Main calculation engine for printing jobs.
-    Implements your formula-based approach with sequential operations.
+    Implements formula-based approach with sequential operations.
     """
 
     def __init__(self, job):
@@ -89,8 +89,13 @@ class PrintingCalculator:
         # Calculate total waste needed by simulating all operations
         total_waste_needed = self._estimate_total_waste(print_run)
         
-        # Total sheets to buy (target quantity + estimated waste)
-        sheets_to_buy = print_run + total_waste_needed
+        # Total printing sheets needed
+        total_printing_sheets = print_run + total_waste_needed
+        
+        # Parent sheets to buy = printing sheets / parts_of_selling_size (rounded up)
+        sheets_to_buy = total_printing_sheets // self.job.parts_of_selling_size
+        if total_printing_sheets % self.job.parts_of_selling_size > 0:
+            sheets_to_buy += 1  # Round up for partial parent sheets
 
         # Calculate paper weight
         paper_area_m2 = self.job.selling_size.area_m2
@@ -100,11 +105,15 @@ class PrintingCalculator:
             Decimal(str(sheets_to_buy)) / 1000
         )
 
+        # Calculate paper cost
+        paper_cost = paper_weight_kg * self.job.paper_type.price_per_kg
+
         # Update job with calculated values
         self.job.print_run = print_run
         self.job.waste_sheets = total_waste_needed
         self.job.sheets_to_buy = sheets_to_buy
         self.job.paper_weight_kg = paper_weight_kg
+        self.job.paper_cost = paper_cost
         self.job.save()
 
     def _estimate_total_waste(self, target_quantity):
@@ -162,7 +171,7 @@ class PrintingCalculator:
 
     def _calculate_operation(self, operation, job_operation=None):
         """
-        Calculate cost and time for a single operation using your formulas.
+        Calculate cost and time for a single operation using formulas.
 
         Args:
             operation: Operation model instance
@@ -260,9 +269,14 @@ class PrintingCalculator:
 
     def _update_job_totals(self):
         """Update job with calculated totals."""
-        self.job.total_material_cost = self.total_cost  # For now, all costs are material
+        # Include paper cost in total
+        total_operations_cost = self.total_cost
+        paper_cost = self.job.paper_cost or Decimal('0')
+        
+        self.job.total_material_cost = total_operations_cost + paper_cost
         self.job.total_labor_cost = Decimal('0')
         self.job.total_outsourcing_cost = Decimal('0')
+        self.job.total_cost = self.job.total_material_cost + self.job.total_labor_cost + self.job.total_outsourcing_cost
         self.job.total_time_minutes = self.total_time
         self.job.status = 'calculated'
         self.job.calculated_at = timezone.now()

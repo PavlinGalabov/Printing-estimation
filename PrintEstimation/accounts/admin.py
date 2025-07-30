@@ -13,10 +13,12 @@ class UserAdmin(BaseUserAdmin):
     Custom admin for User model.
     """
     # Display configuration
-    list_display = ['username', 'email', 'get_full_name', 'user_type', 'is_active', 'date_joined']
-    list_filter = ['user_type', 'is_active', 'is_staff', 'is_superuser', 'date_joined']
-    search_fields = ['username', 'first_name', 'last_name', 'email']
+    list_display = ['username', 'email', 'get_full_name', 'user_type', 'is_active', 'last_login', 'date_joined']
+    list_filter = ['user_type', 'is_active', 'is_staff', 'is_superuser', 'date_joined', 'last_login']
+    search_fields = ['username', 'first_name', 'last_name', 'email', 'phone']
     ordering = ['-date_joined']
+    list_per_page = 25
+    date_hierarchy = 'date_joined'
 
     # Form configuration
     fieldsets = BaseUserAdmin.fieldsets + (
@@ -89,8 +91,10 @@ class ClientAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ['created_at', 'updated_at']
+    list_per_page = 20
+    list_editable = ['is_active', 'is_vip', 'payment_terms']
 
-    actions = ['mark_as_vip', 'mark_as_regular', 'activate_clients', 'deactivate_clients']
+    actions = ['mark_as_vip', 'mark_as_regular', 'activate_clients', 'deactivate_clients', 'export_selected']
 
     def mark_as_vip(self, request, queryset):
         """Mark selected clients as VIP."""
@@ -111,3 +115,8 @@ class ClientAdmin(admin.ModelAdmin):
         """Deactivate selected clients."""
         queryset.update(is_active=False)
     deactivate_clients.short_description = "Deactivate selected clients"
+
+    def export_selected(self, request, queryset):
+        """Export selected clients (placeholder)."""
+        self.message_user(request, f"Would export {queryset.count()} clients")
+    export_selected.short_description = "Export selected clients"

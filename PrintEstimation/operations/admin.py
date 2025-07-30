@@ -9,10 +9,16 @@ from .models import OperationCategory, Operation, PaperType, PaperSize
 @admin.register(OperationCategory)
 class OperationCategoryAdmin(admin.ModelAdmin):
     """Admin for OperationCategory model."""
-    list_display = ['name', 'color', 'sort_order']
-    list_editable = ['sort_order']
-    search_fields = ['name']
+    list_display = ['name', 'color', 'sort_order', 'operations_count']
+    list_editable = ['sort_order', 'color']
+    search_fields = ['name', 'description']
     ordering = ['sort_order', 'name']
+    list_per_page = 15
+
+    def operations_count(self, obj):
+        """Display number of operations in this category."""
+        return obj.operations.count()
+    operations_count.short_description = "Operations Count"
 
 
 @admin.register(Operation)

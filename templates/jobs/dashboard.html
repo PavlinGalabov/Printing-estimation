@@ -3,6 +3,123 @@
 
 {% block title %}Dashboard - Printing Estimation{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Soft Pastel Dashboard Cards */
+.card-urgent {
+    background: #ffb3ba !important;
+    color: #6b5b73 !important;
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 179, 186, 0.3);
+    transition: all 0.3s ease;
+}
+.card-urgent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 179, 186, 0.4);
+}
+
+.card-approved {
+    background: #bae1ff !important;
+    color: #37474f !important;
+    border: none;
+    box-shadow: 0 4px 15px rgba(186, 225, 255, 0.3);
+    transition: all 0.3s ease;
+}
+.card-approved:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(186, 225, 255, 0.4);
+}
+
+.card-waiting-manager {
+    background: #ffffba !important;
+    color: #5d4037 !important;
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 255, 186, 0.3);
+    transition: all 0.3s ease;
+}
+.card-waiting-manager:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 255, 186, 0.4);
+}
+
+.card-waiting-client {
+    background: #baffc9 !important;
+    color: #2e7d32 !important;
+    border: none;
+    box-shadow: 0 4px 15px rgba(186, 255, 201, 0.3);
+    transition: all 0.3s ease;
+}
+.card-waiting-client:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(186, 255, 201, 0.4);
+}
+
+/* Alternative even softer pastel colors */
+.card-urgent-soft {
+    background: linear-gradient(135deg, #ffb3ba 0%, #ffdfba 100%) !important;
+    color: #6b5b73 !important;
+}
+
+.card-approved-soft {
+    background: linear-gradient(135deg, #bae1ff 0%, #e1f5fe 100%) !important;
+    color: #37474f !important;
+}
+
+.card-waiting-manager-soft {
+    background: linear-gradient(135deg, #ffffba 0%, #fff9c4 100%) !important;
+    color: #5d4037 !important;
+}
+
+.card-waiting-client-soft {
+    background: linear-gradient(135deg, #baffc9 0%, #e8f5e8 100%) !important;
+    color: #2e7d32 !important;
+}
+
+/* Card text adjustments for better readability */
+.pastel-card .card-title {
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.pastel-card h2 {
+    font-weight: 700;
+}
+
+.pastel-card small {
+    opacity: 0.7;
+}
+
+.pastel-card .card-footer {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: none !important;
+    backdrop-filter: blur(10px);
+}
+
+.pastel-card .card-footer a {
+    color: inherit !important;
+    font-weight: 500;
+}
+
+/* Section headers with subtle styling */
+.section-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid #6c757d;
+    color: #495057;
+}
+
+/* Additional dashboard styles */
+.text-white-50 {
+    color: rgba(255,255,255,0.5) !important;
+}
+.text-white-75 {
+    color: rgba(255,255,255,0.75) !important;
+}
+.card-footer {
+    padding: 0.5rem 1rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container my-4">
     <div class="row">
@@ -29,91 +146,91 @@
         </div>
     </div>
 
-    <!-- Statistics Cards -->
+    <!-- Workflow Status Cards -->
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-primary text-white h-100">
+            <div class="card card-urgent pastel-card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Total Jobs</h6>
-                            <h2 class="mb-0">{{ total_jobs|default:0 }}</h2>
-                            <small class="text-white-75">All time</small>
+                            <h6 class="card-title">Urgent Orders</h6>
+                            <h2 class="mb-0">{{ urgent_count|default:0 }}</h2>
+                            <small>Needs immediate attention</small>
                         </div>
                         <div class="align-self-center">
-                            <i class="bi bi-file-earmark-text fs-1 opacity-75"></i>
+                            <i class="bi bi-exclamation-triangle fs-1 opacity-75"></i>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-primary border-0">
-                    <a href="{% url 'jobs:list' %}" class="text-white text-decoration-none small">
-                        <i class="bi bi-arrow-right me-1"></i>View all jobs
+                <div class="card-footer">
+                    <a href="{% url 'jobs:list' %}?status=urgent" class="text-decoration-none small">
+                        <i class="bi bi-arrow-right me-1"></i>View urgent orders
                     </a>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-success text-white h-100">
+            <div class="card card-approved pastel-card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Templates</h6>
-                            <h2 class="mb-0">{{ total_templates|default:0 }}</h2>
-                            <small class="text-white-75">Ready to use</small>
+                            <h6 class="card-title">Approved Orders</h6>
+                            <h2 class="mb-0">{{ approved_count|default:0 }}</h2>
+                            <small>Ready for production</small>
                         </div>
                         <div class="align-self-center">
-                            <i class="bi bi-files fs-1 opacity-75"></i>
+                            <i class="bi bi-check-circle fs-1 opacity-75"></i>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-success border-0">
-                    <a href="{% url 'jobs:templates' %}" class="text-white text-decoration-none small">
-                        <i class="bi bi-arrow-right me-1"></i>View templates
+                <div class="card-footer">
+                    <a href="{% url 'jobs:list' %}?status=approved" class="text-decoration-none small">
+                        <i class="bi bi-arrow-right me-1"></i>View approved orders
                     </a>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-warning text-dark h-100">
+            <div class="card card-waiting-manager pastel-card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title">Pending Jobs</h6>
-                            <h2 class="mb-0">{{ pending_jobs|default:0 }}</h2>
-                            <small>Need calculation</small>
+                            <h6 class="card-title">Waiting Manager Approval</h6>
+                            <h2 class="mb-0">{{ waiting_manager_count|default:0 }}</h2>
+                            <small>Needs manager review</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-person-check fs-1 opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'jobs:list' %}?status=waiting_manager" class="text-decoration-none small">
+                        <i class="bi bi-arrow-right me-1"></i>View pending approval
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card card-waiting-client pastel-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Waiting Client Approval</h6>
+                            <h2 class="mb-0">{{ waiting_client_count|default:0 }}</h2>
+                            <small>Awaiting client response</small>
                         </div>
                         <div class="align-self-center">
                             <i class="bi bi-clock fs-1 opacity-75"></i>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-warning border-0">
-                    <a href="{% url 'jobs:list' %}?status=draft" class="text-dark text-decoration-none small">
-                        <i class="bi bi-arrow-right me-1"></i>View pending
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-info text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title text-white-50">Sent Jobs</h6>
-                            <h2 class="mb-0">{{ sent_jobs|default:0 }}</h2>
-                            <small class="text-white-75">Awaiting response</small>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-send fs-1 opacity-75"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-info border-0">
-                    <a href="{% url 'jobs:list' %}?status=sent" class="text-white text-decoration-none small">
-                        <i class="bi bi-arrow-right me-1"></i>View sent
+                <div class="card-footer">
+                    <a href="{% url 'jobs:list' %}?status=waiting_client" class="text-decoration-none small">
+                        <i class="bi bi-arrow-right me-1"></i>View client pending
                     </a>
                 </div>
             </div>
@@ -121,159 +238,279 @@
     </div>
 
     <div class="row">
-        <!-- Recent Jobs -->
+        <!-- Workflow Jobs Lists -->
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <!-- Urgent Orders -->
+            {% if urgent_jobs %}
+            <div class="card mb-4">
+                <div class="card-header section-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="bi bi-clock-history me-2"></i>
-                        Recent Jobs
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Urgent Orders ({{ urgent_count }})
                     </h5>
-                    <a href="{% url 'jobs:list' %}" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-arrow-right me-1"></i>View All
+                    <a href="{% url 'jobs:list' %}?status=urgent" class="text-white text-decoration-none">
+                        <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
                 <div class="card-body p-0">
-                    {% if recent_jobs %}
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Job</th>
-                                        <th>Client</th>
-                                        <th>Type</th>
-                                        <th>Status</th>
-                                        <th>Cost</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for job in recent_jobs %}
-                                    <tr>
-                                        <td>
-                                            <div>
-                                                <strong>{{ job.order_name }}</strong>
-                                                {% if job.job_number %}
-                                                <br><small class="text-muted">{{ job.job_number }}</small>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div>
-                                                {{ job.client.company_name }}
-                                                {% if job.client.contact_person %}
-                                                <br><small class="text-muted">{{ job.client.contact_person }}</small>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-secondary">
-                                                {{ job.get_order_type_display }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge
-                                                {% if job.status == 'draft' %}bg-warning text-dark
-                                                {% elif job.status == 'calculated' %}bg-info
-                                                {% elif job.status == 'sent' %}bg-primary
-                                                {% elif job.status == 'approved' %}bg-success
-                                                {% elif job.status == 'rejected' %}bg-danger
-                                                {% else %}bg-secondary{% endif %}">
-                                                {{ job.get_status_display }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {% if job.total_cost %}
-                                                <strong>€{{ job.total_cost|floatformat:2 }}</strong>
-                                                <br><small class="text-muted">€{{ job.total_cost|div:job.quantity|floatformat:3 }}/pc</small>
-                                            {% else %}
-                                                <span class="text-muted">Not calculated</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{% url 'jobs:detail' job.pk %}"
-                                                   class="btn btn-outline-primary" title="View">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                {% if job.status == 'draft' or job.status == 'calculated' %}
-                                                <a href="{% url 'jobs:calculate' job.pk %}"
-                                                   class="btn btn-outline-success" title="Calculate">
-                                                    <i class="bi bi-calculator"></i>
-                                                </a>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-5">
-                            <i class="bi bi-file-earmark-text text-muted" style="font-size: 3rem;"></i>
-                            <h5 class="mt-3 text-muted">No Jobs Yet</h5>
-                            <p class="text-muted">Create your first job to get started</p>
-                            <a href="{% url 'jobs:create' %}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle me-2"></i>Create Job
-                            </a>
-                        </div>
-                    {% endif %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <tbody>
+                                {% for job in urgent_jobs|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ job.order_name }}</strong>
+                                            <br><small class="text-muted">{{ job.client.company_name }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if job.total_cost %}
+                                            <strong>€{{ job.total_cost|floatformat:2 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Not calculated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+            {% endif %}
+
+            <!-- Approved Orders -->
+            {% if approved_jobs %}
+            <div class="card mb-4">
+                <div class="card-header section-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Approved Orders ({{ approved_count }})
+                    </h5>
+                    <a href="{% url 'jobs:list' %}?status=approved" class="text-white text-decoration-none">
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <tbody>
+                                {% for job in approved_jobs|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ job.order_name }}</strong>
+                                            <br><small class="text-muted">{{ job.client.company_name }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if job.total_cost %}
+                                            <strong>€{{ job.total_cost|floatformat:2 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Not calculated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-success btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Waiting Manager Approval -->
+            {% if waiting_manager_jobs %}
+            <div class="card mb-4">
+                <div class="card-header section-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-check me-2"></i>
+                        Waiting Manager Approval ({{ waiting_manager_count }})
+                    </h5>
+                    <a href="{% url 'jobs:list' %}?status=waiting_manager" class="text-dark text-decoration-none">
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <tbody>
+                                {% for job in waiting_manager_jobs|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ job.order_name }}</strong>
+                                            <br><small class="text-muted">{{ job.client.company_name }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if job.total_cost %}
+                                            <strong>€{{ job.total_cost|floatformat:2 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Not calculated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-warning btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Waiting Client Approval -->
+            {% if waiting_client_jobs %}
+            <div class="card mb-4">
+                <div class="card-header section-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock me-2"></i>
+                        Waiting Client Approval ({{ waiting_client_count }})
+                    </h5>
+                    <a href="{% url 'jobs:list' %}?status=waiting_client" class="text-white text-decoration-none">
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <tbody>
+                                {% for job in waiting_client_jobs|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ job.order_name }}</strong>
+                                            <br><small class="text-muted">{{ job.client.company_name }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if job.total_cost %}
+                                            <strong>€{{ job.total_cost|floatformat:2 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Not calculated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-info btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- If no workflow jobs -->
+            {% if not urgent_jobs and not approved_jobs and not waiting_manager_jobs and not waiting_client_jobs %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-clipboard-check text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 text-muted">All Clear!</h4>
+                    <p class="text-muted">No jobs requiring immediate attention.</p>
+                    <a href="{% url 'jobs:create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create New Job
+                    </a>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
-        <!-- Quick Actions & Info -->
+        <!-- Sidebar -->
         <div class="col-lg-4">
+            <!-- Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bar-chart me-2"></i>
+                        Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="h5 text-primary mb-1">{{ total_active_jobs|default:0 }}</div>
+                            <div class="small text-muted">Active Jobs</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h5 text-success mb-1">{{ total_templates|default:0 }}</div>
+                            <div class="small text-muted">Templates</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Quick Actions -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">
+                    <h6 class="mb-0">
                         <i class="bi bi-lightning me-2"></i>
                         Quick Actions
-                    </h5>
+                    </h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="{% url 'jobs:create' %}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-2"></i>
-                            Create New Job
+                            <i class="bi bi-plus-circle me-2"></i>Create New Job
                         </a>
                         <a href="{% url 'accounts:client_create' %}" class="btn btn-success">
-                            <i class="bi bi-person-plus me-2"></i>
-                            Add New Client
+                            <i class="bi bi-person-plus me-2"></i>Add New Client
                         </a>
                         <a href="{% url 'jobs:templates' %}" class="btn btn-info">
-                            <i class="bi bi-files me-2"></i>
-                            Browse Templates
+                            <i class="bi bi-files me-2"></i>Browse Templates
+                        </a>
+                        <a href="{% url 'jobs:list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list me-2"></i>View All Jobs
                         </a>
                         {% if user.is_superuser_type %}
-                        <a href="{% url 'operations:list' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-gear me-2"></i>
-                            Manage Operations
-                        </a>
                         <a href="/admin/" class="btn btn-outline-secondary">
-                            <i class="bi bi-shield-check me-2"></i>
-                            Admin Panel
+                            <i class="bi bi-shield-check me-2"></i>Admin Panel
                         </a>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- System Status -->
-            <div class="card mb-4">
+            <!-- User Info -->
+            <div class="card">
                 <div class="card-header">
                     <h6 class="mb-0">
-                        <i class="bi bi-info-circle me-2"></i>
-                        System Info
+                        <i class="bi bi-person me-2"></i>
+                        User Info
                     </h6>
                 </div>
                 <div class="card-body">
                     <div class="small">
                         <div class="row g-1 mb-2">
-                            <div class="col-6"><strong>Your Role:</strong></div>
-                            <div class="col-6">
+                            <div class="col-5"><strong>Role:</strong></div>
+                            <div class="col-7">
                                 <span class="badge
                                     {% if user.is_superuser_type %}bg-danger
                                     {% elif user.is_staff_type %}bg-warning text-dark
@@ -283,60 +520,14 @@
                             </div>
                         </div>
                         <div class="row g-1 mb-2">
-                            <div class="col-6"><strong>Last Login:</strong></div>
-                            <div class="col-6">{{ user.last_login|date:"M d, H:i"|default:"First time" }}</div>
+                            <div class="col-5"><strong>Last Login:</strong></div>
+                            <div class="col-7">{{ user.last_login|date:"M d, H:i"|default:"First time" }}</div>
                         </div>
                         <div class="row g-1">
-                            <div class="col-6"><strong>Member Since:</strong></div>
-                            <div class="col-6">{{ user.date_joined|date:"M Y" }}</div>
+                            <div class="col-5"><strong>Member Since:</strong></div>
+                            <div class="col-7">{{ user.date_joined|date:"M Y" }}</div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="bi bi-activity me-2"></i>
-                        Recent Activity
-                    </h6>
-                </div>
-                <div class="card-body">
-                    {% if recent_jobs %}
-                    <div class="timeline">
-                        {% for job in recent_jobs|slice:":5" %}
-                        <div class="d-flex mb-3">
-                            <div class="flex-shrink-0">
-                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-                                     style="width: 32px; height: 32px;">
-                                    <i class="bi bi-file-earmark small"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="small">
-                                    <strong>{{ job.order_name }}</strong>
-                                    {% if job.status == 'calculated' %}
-                                        calculated
-                                    {% elif job.status == 'sent' %}
-                                        sent to client
-                                    {% else %}
-                                        created
-                                    {% endif %}
-                                </div>
-                                <div class="text-muted small">
-                                    {{ job.updated_at|timesince }} ago
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center text-muted">
-                        <i class="bi bi-clock" style="font-size: 2rem;"></i>
-                        <p class="mt-2 mb-0">No recent activity</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -344,28 +535,3 @@
 </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-.timeline {
-    position: relative;
-}
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 40px;
-    bottom: 20px;
-    width: 2px;
-    background: #dee2e6;
-}
-.card-footer {
-    padding: 0.5rem 1rem;
-}
-.text-white-50 {
-    color: rgba(255,255,255,0.5) !important;
-}
-.text-white-75 {
-    color: rgba(255,255,255,0.75) !important;
-}
-</style>
-{% endblock %}

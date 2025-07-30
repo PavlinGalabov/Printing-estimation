@@ -8,10 +8,9 @@ from django.views.generic import (
     CreateView, ListView, DetailView, UpdateView, DeleteView, TemplateView
 )
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from .models import User, Client
-from .forms import ClientForm
+from .forms import ClientForm, CustomUserCreationForm
 
 
 class SuperuserRequiredMixin(UserPassesTestMixin):
@@ -24,13 +23,17 @@ class SuperuserRequiredMixin(UserPassesTestMixin):
 class RegisterView(CreateView):
     """User registration view."""
     model = User
-    form_class = UserCreationForm
+    form_class = CustomUserCreationForm
     template_name = 'accounts/register.html'
     success_url = reverse_lazy('accounts:login')
 
     def form_valid(self, form):
         messages.success(self.request, 'Account created successfully! You can now log in.')
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, 'Please correct the errors below.')
+        return super().form_invalid(form)
 
 
 class ProfileView(LoginRequiredMixin, TemplateView):
