@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Paper Size - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Delete Paper Size
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone.
+                    </div>
+                    
+                    <p>Are you sure you want to delete the paper size <strong>"{{ object.name }}"</strong>?</p>
+                    
+                    <div class="mb-3">
+                        <strong>Paper Size Details:</strong>
+                        <ul class="list-unstyled mt-2">
+                            <li><strong>Name:</strong> {{ object.name }}</li>
+                            <li><strong>Dimensions:</strong> {{ object.width_cm }} × {{ object.height_cm }} cm</li>
+                            <li><strong>Area:</strong> {{ object.area_m2|floatformat:4 }} m² ({{ object.area_cm2|floatformat:2 }} cm²)</li>
+                            {% if object.description %}
+                                <li><strong>Description:</strong> {{ object.description }}</li>
+                            {% endif %}
+                            <li><strong>Type:</strong> 
+                                {% if object.is_standard %}
+                                    <span class="badge bg-primary">Standard</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Custom</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'operations:paper_sizes' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Yes, Delete Paper Size
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

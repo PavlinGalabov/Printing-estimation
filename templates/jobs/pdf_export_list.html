@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}PDF Export - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-file-earmark-pdf me-2"></i>PDF Export</h2>
+                <a href="{% url 'jobs:pdf_export_history' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-clock-history me-1"></i>View Export History
+                </a>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                {% for status_code, status_name in status_choices %}
+                                    <option value="{{ status_code }}" {% if status_code == current_status %}selected{% endif %}>
+                                        {{ status_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="client" class="form-label">Client</label>
+                            <select name="client" id="client" class="form-select">
+                                <option value="">All Clients</option>
+                                {% for client in clients %}
+                                    <option value="{{ client.pk }}" {% if client.pk|stringformat:"s" == current_client %}selected{% endif %}>
+                                        {{ client.company_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="calculated_only" id="calculated_only" value="1" {% if calculated_only %}checked{% endif %}>
+                                <label class="form-check-label" for="calculated_only">
+                                    Calculated jobs only
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-search me-1"></i>Filter
+                                </button>
+                                <a href="{% url 'jobs:pdf_export_list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Jobs List -->
+            {% if jobs %}
+                <div class="row">
+                    {% for job in jobs %}
+                        <div class="col-lg-6 col-xl-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">{{ job.order_name|truncatechars:30 }}</h6>
+                                    <span class="badge {{ job.get_status_badge_class }}">{{ job.get_status_display }}</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-5"><strong>Job #:</strong></div>
+                                        <div class="col-7">{{ job.job_number|default:"Draft" }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-5"><strong>Client:</strong></div>
+                                        <div class="col-7">{{ job.client.company_name|truncatechars:20 }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-5"><strong>Quantity:</strong></div>
+                                        <div class="col-7">{{ job.quantity|floatformat:0 }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-5"><strong>Type:</strong></div>
+                                        <div class="col-7">{{ job.get_order_type_display }}</div>
+                                    </div>
+                                    {% if job.total_cost %}
+                                        <div class="row mb-2">
+                                            <div class="col-5"><strong>Total:</strong></div>
+                                            <div class="col-7"><strong class="text-success">€{{ job.total_cost|floatformat:2 }}</strong></div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group w-100" role="group">
+                                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i>Export
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% for export_code, export_name in export_types %}
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'jobs:pdf_generate' job.pk %}?type={{ export_code }}">
+                                                        <i class="bi bi-download me-2"></i>{{ export_name }}
+                                                    </a>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                        <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if is_paginated %}
+                    <nav aria-label="Jobs pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.client %}&client={{ request.GET.client }}{% endif %}{% if request.GET.calculated_only %}&calculated_only={{ request.GET.calculated_only }}{% endif %}">&laquo; First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.client %}&client={{ request.GET.client }}{% endif %}{% if request.GET.calculated_only %}&calculated_only={{ request.GET.calculated_only }}{% endif %}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.client %}&client={{ request.GET.client }}{% endif %}{% if request.GET.calculated_only %}&calculated_only={{ request.GET.calculated_only }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.client %}&client={{ request.GET.client }}{% endif %}{% if request.GET.calculated_only %}&calculated_only={{ request.GET.calculated_only }}{% endif %}">Last &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No jobs found matching your criteria. Try adjusting the filters or <a href="{% url 'jobs:create' %}">create a new job</a>.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

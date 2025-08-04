@@ -191,8 +191,10 @@ class Operation(models.Model):
             else:
                 total_cost = base_cost
 
-        # Calculate quantity after this operation (subtract waste, then apply multipliers/dividers)
-        quantity_after = current_quantity - waste_sheets
+        # Calculate quantity after this operation
+        # Waste is used for cost calculation but doesn't reduce the output quantity
+        # The output quantity is the input quantity modified by operation-specific transformations
+        quantity_after = current_quantity
         
         # Apply dynamic parameters first (e.g., cut_pieces)
         if 'cut_pieces' in operation_parameters:
@@ -323,6 +325,20 @@ class PaperSize(models.Model):
         default=False,
         help_text="Standard industry size (A4, A3, etc.)"
     )
+    
+    # Parent size relationship
+    parent_size = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='child_sizes',
+        help_text="Parent size this size is cut from"
+    )
+    parts_of_parent = models.PositiveIntegerField(
+        default=1,
+        help_text="How many parts this size makes from parent size (e.g., 4 for quarter size)"
+    )
 
     class Meta:
         ordering = ['name']
@@ -339,3 +355,15 @@ class PaperSize(models.Model):
     def area_cm2(self):
         """Calculate area in square centimeters."""
         return float(self.width_cm * self.height_cm)
+    
+    def get_parent_size_for_job(self):
+        """Get the parent size to use for job calculations."""
+        if self.parent_size:
+            return self.parent_size
+        return self  # If no parent, this is the parent size
+    
+    def get_parts_of_parent_for_job(self):
+        """Get the parts of parent size for job calculations."""
+        if self.parent_size:
+            return self.parts_of_parent
+        return 1  # If no parent, this is 1 part of itself

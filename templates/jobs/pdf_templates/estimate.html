@@ -1,0 +1,433 @@
+{% load job_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimate - {{ job.order_name }}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; font-size: 12px; }
+            .page-break { page-break-before: always; }
+            .card { break-inside: avoid; }
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        .print-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-section .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .status-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        .metric-card {
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .metric-card h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .metric-card small {
+            opacity: 0.9;
+        }
+        
+        .info-table td {
+            padding: 0.5rem 0;
+            border: none;
+        }
+        
+        .info-table td:first-child {
+            font-weight: 600;
+            color: #495057;
+            width: 40%;
+        }
+        
+        .operations-table {
+            margin-bottom: 0;
+        }
+        
+        .operations-table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .operations-table td {
+            vertical-align: middle;
+        }
+        
+        .sequence-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .footer-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Button -->
+    <button class="btn btn-primary print-button no-print" onclick="window.print()">
+        <i class="bi bi-printer me-2"></i>Print/Save as PDF
+    </button>
+    
+    <div class="print-container">
+        <!-- Header -->
+        <div class="header-section">
+            <h1><i class="bi bi-file-earmark-text me-3"></i>ESTIMATE</h1>
+            <div class="subtitle">Professional Printing Cost Estimation</div>
+        </div>
+
+        <!-- Job Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Job Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless info-table">
+                            <tr>
+                                <td><strong>Job Number:</strong></td>
+                                <td>{{ job.job_number|default:"Draft" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Order Name:</strong></td>
+                                <td>{{ job.order_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Client:</strong></td>
+                                <td>{{ job.client.company_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Contact:</strong></td>
+                                <td>{{ job.client.contact_person|default:job.client.email }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Order Type:</strong></td>
+                                <td>{{ job.get_order_type_display }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless info-table">
+                            <tr>
+                                <td><strong>Quantity:</strong></td>
+                                <td>{{ job.quantity|floatformat:0 }} pieces</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge 
+                                        {% if job.status == 'draft' %}bg-secondary
+                                        {% elif job.status == 'calculated' %}bg-info
+                                        {% elif job.status == 'waiting_manager' %}bg-warning text-dark
+                                        {% elif job.status == 'waiting_client' %}bg-primary
+                                        {% elif job.status == 'approved' %}bg-success
+                                        {% elif job.status == 'urgent' %}bg-danger
+                                        {% elif job.status == 'finished' %}bg-dark
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ job.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% if job.deadline %}
+                            <tr>
+                                <td><strong>Deadline:</strong></td>
+                                <td>{{ job.deadline|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Generated:</strong></td>
+                                <td>{{ generated_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paper Specifications -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-earmark me-2"></i>Paper Specifications
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless info-table">
+                            <tr>
+                                <td><strong>Paper Type:</strong></td>
+                                <td>{{ job.paper_type.name }} ({{ job.paper_type.weight_gsm }}gsm)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>End Size:</strong></td>
+                                <td>
+                                    {% if job.end_size %}
+                                        {{ job.end_size }}
+                                    {% else %}
+                                        {{ job.custom_end_width }}×{{ job.custom_end_height }} cm
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Printing Size:</strong></td>
+                                <td>{{ job.printing_size }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Parent Size:</strong></td>
+                                <td>{{ job.selling_size }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless info-table">
+                            <tr>
+                                <td><strong>Parts of Parent:</strong></td>
+                                <td>{{ job.parts_of_selling_size }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>N-up:</strong></td>
+                                <td>{{ job.n_up }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Colors Front:</strong></td>
+                                <td>{{ job.colors_front }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Colors Back:</strong></td>
+                                <td>{{ job.colors_back }}</td>
+                            </tr>
+                            {% if job.print_run %}
+                            <tr>
+                                <td><strong>Print Run:</strong></td>
+                                <td>{{ job.print_run|floatformat:0 }} sheets</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Sheets to Buy:</strong></td>
+                                <td>{{ job.sheets_to_buy|floatformat:0 }} sheets</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operations -->
+        {% if operations %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ol me-2"></i>Operations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover operations-table">
+                        <thead>
+                            <tr>
+                                <th width="60">#</th>
+                                <th>Operation</th>
+                                <th>Category</th>
+                                <th width="120" class="text-end">Cost</th>
+                                <th width="100" class="text-end">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for operation in operations %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary sequence-badge">{{ operation.sequence_order }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ operation.operation_name }}</strong>
+                                        {% if operation.colors_used %}
+                                            <br><small class="text-muted">{{ operation.colors_used }} colors</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ operation.operation.category.name }}</td>
+                                <td class="text-end">
+                                    <strong class="text-success">€{{ operation.total_cost|floatformat:2 }}</strong>
+                                </td>
+                                <td class="text-end">{{ operation.total_time_minutes|hours_minutes }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Cost Summary -->
+        {% if job.total_cost %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-calculator me-2"></i>Cost Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="metric-card bg-primary">
+                            <h3>€{{ job.total_cost|floatformat:2 }}</h3>
+                            <small>Total Cost</small>
+                        </div>
+                    </div>
+                    {% if cost_per_piece > 0 %}
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="metric-card bg-info">
+                            <h3>€{{ cost_per_piece|floatformat:4 }}</h3>
+                            <small>Cost per Piece</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if job.total_time_minutes %}
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="metric-card bg-success">
+                            <h3>{{ job.total_time_minutes|hours_minutes }}</h3>
+                            <small>Total Time</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if job.sheets_to_buy %}
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="metric-card bg-warning text-dark">
+                            <h3>{{ job.sheets_to_buy }}</h3>
+                            <small>Parent Sheets</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Detailed Cost Breakdown -->
+                <div class="row">
+                    {% if job.paper_cost %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-muted">Paper Cost</h6>
+                                <h4 class="text-primary">€{{ job.paper_cost|floatformat:2 }}</h4>
+                                <small class="text-muted">
+                                    {{ job.sheets_to_buy|default:"0" }} sheets × {{ job.paper_weight_kg|floatformat:2|default:"0.00" }}kg
+                                    {% if job.paper_type %}@ €{{ job.paper_type.price_per_kg|floatformat:2 }}/kg{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if operations_cost > 0 %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-muted">Operations Cost</h6>
+                                <h4 class="text-success">€{{ operations_cost|floatformat:2 }}</h4>
+                                <small class="text-muted">All printing operations</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes -->
+        {% if job.notes %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-left-text me-2"></i>Notes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light">
+                    {{ job.notes|linebreaks }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer-section">
+            <p class="mb-1"><strong>Generated:</strong> {{ generated_at|date:"Y-m-d H:i" }}</p>
+            <p class="mb-0">This estimate is valid for 30 days from the date of generation.</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -10,6 +10,7 @@ from django.views.generic import (
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from .models import (
     Operation, OperationCategory, PaperType,
     PaperSize,
@@ -20,7 +21,9 @@ class SuperuserRequiredMixin(UserPassesTestMixin):
     """Mixin to require superuser access."""
 
     def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_superuser_type
+        return self.request.user.is_authenticated and (
+            self.request.user.is_superuser_type or self.request.user.is_superuser
+        )
 
 
 # Operation Views
@@ -178,6 +181,42 @@ class PaperTypeListView(LoginRequiredMixin, ListView):
         return PaperType.objects.filter(is_active=True).order_by('name')
 
 
+class PaperTypeCreateView(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
+    """Create new paper type."""
+    model = PaperType
+    template_name = 'operations/papertype_form.html'
+    fields = ['name', 'weight_gsm', 'description', 'price_per_kg', 'is_active']
+    success_url = reverse_lazy('operations:paper_types')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Paper type "{form.instance.name}" created successfully!')
+        return super().form_valid(form)
+
+
+class PaperTypeUpdateView(LoginRequiredMixin, SuperuserRequiredMixin, UpdateView):
+    """Update existing paper type."""
+    model = PaperType
+    template_name = 'operations/papertype_form.html'
+    fields = ['name', 'weight_gsm', 'description', 'price_per_kg', 'is_active']
+    success_url = reverse_lazy('operations:paper_types')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Paper type "{form.instance.name}" updated successfully!')
+        return super().form_valid(form)
+
+
+class PaperTypeDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
+    """Delete paper type."""
+    model = PaperType
+    template_name = 'operations/papertype_confirm_delete.html'
+    success_url = reverse_lazy('operations:paper_types')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        messages.success(request, f'Paper type "{self.object.name}" deleted successfully!')
+        return super().delete(request, *args, **kwargs)
+
+
 # Paper Size Views
 
 class PaperSizeListView(LoginRequiredMixin, ListView):
@@ -190,6 +229,42 @@ class PaperSizeListView(LoginRequiredMixin, ListView):
         return PaperSize.objects.all().order_by('name')
 
 
+class PaperSizeCreateView(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
+    """Create new paper size."""
+    model = PaperSize
+    template_name = 'operations/papersize_form.html'
+    fields = ['name', 'width_cm', 'height_cm', 'description', 'is_standard', 'parent_size', 'parts_of_parent']
+    success_url = reverse_lazy('operations:paper_sizes')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Paper size "{form.instance.name}" created successfully!')
+        return super().form_valid(form)
+
+
+class PaperSizeUpdateView(LoginRequiredMixin, SuperuserRequiredMixin, UpdateView):
+    """Update existing paper size."""
+    model = PaperSize
+    template_name = 'operations/papersize_form.html'
+    fields = ['name', 'width_cm', 'height_cm', 'description', 'is_standard', 'parent_size', 'parts_of_parent']
+    success_url = reverse_lazy('operations:paper_sizes')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Paper size "{form.instance.name}" updated successfully!')
+        return super().form_valid(form)
+
+
+class PaperSizeDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
+    """Delete paper size."""
+    model = PaperSize
+    template_name = 'operations/papersize_confirm_delete.html'
+    success_url = reverse_lazy('operations:paper_sizes')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        messages.success(request, f'Paper size "{self.object.name}" deleted successfully!')
+        return super().delete(request, *args, **kwargs)
+
+
 # Machine Views
 
 # class MachineListView(LoginRequiredMixin, ListView):
@@ -200,3 +275,20 @@ class PaperSizeListView(LoginRequiredMixin, ListView):
 #
 #     def get_queryset(self):
 #         return PrintingMachine.objects.filter(is_active=True).order_by('name')
+
+
+# API Views
+
+def paper_size_parent_info(request, pk):
+    """API endpoint to get parent size information for a paper size."""
+    paper_size = get_object_or_404(PaperSize, pk=pk)
+    
+    parent_size = paper_size.get_parent_size_for_job()
+    parts_of_parent = paper_size.get_parts_of_parent_for_job()
+    
+    return JsonResponse({
+        'parent_size_id': parent_size.pk,
+        'parent_size_name': parent_size.name,
+        'parts_of_parent': parts_of_parent,
+        'has_parent': paper_size.parent_size is not None
+    })

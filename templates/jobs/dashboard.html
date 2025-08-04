@@ -4,120 +4,8 @@
 {% block title %}Dashboard - Printing Estimation{% endblock %}
 
 {% block extra_css %}
-<style>
-/* Soft Pastel Dashboard Cards */
-.card-urgent {
-    background: #ffb3ba !important;
-    color: #6b5b73 !important;
-    border: none;
-    box-shadow: 0 4px 15px rgba(255, 179, 186, 0.3);
-    transition: all 0.3s ease;
-}
-.card-urgent:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 179, 186, 0.4);
-}
-
-.card-approved {
-    background: #bae1ff !important;
-    color: #37474f !important;
-    border: none;
-    box-shadow: 0 4px 15px rgba(186, 225, 255, 0.3);
-    transition: all 0.3s ease;
-}
-.card-approved:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(186, 225, 255, 0.4);
-}
-
-.card-waiting-manager {
-    background: #ffffba !important;
-    color: #5d4037 !important;
-    border: none;
-    box-shadow: 0 4px 15px rgba(255, 255, 186, 0.3);
-    transition: all 0.3s ease;
-}
-.card-waiting-manager:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 255, 186, 0.4);
-}
-
-.card-waiting-client {
-    background: #baffc9 !important;
-    color: #2e7d32 !important;
-    border: none;
-    box-shadow: 0 4px 15px rgba(186, 255, 201, 0.3);
-    transition: all 0.3s ease;
-}
-.card-waiting-client:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(186, 255, 201, 0.4);
-}
-
-/* Alternative even softer pastel colors */
-.card-urgent-soft {
-    background: linear-gradient(135deg, #ffb3ba 0%, #ffdfba 100%) !important;
-    color: #6b5b73 !important;
-}
-
-.card-approved-soft {
-    background: linear-gradient(135deg, #bae1ff 0%, #e1f5fe 100%) !important;
-    color: #37474f !important;
-}
-
-.card-waiting-manager-soft {
-    background: linear-gradient(135deg, #ffffba 0%, #fff9c4 100%) !important;
-    color: #5d4037 !important;
-}
-
-.card-waiting-client-soft {
-    background: linear-gradient(135deg, #baffc9 0%, #e8f5e8 100%) !important;
-    color: #2e7d32 !important;
-}
-
-/* Card text adjustments for better readability */
-.pastel-card .card-title {
-    font-weight: 600;
-    opacity: 0.8;
-}
-
-.pastel-card h2 {
-    font-weight: 700;
-}
-
-.pastel-card small {
-    opacity: 0.7;
-}
-
-.pastel-card .card-footer {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border: none !important;
-    backdrop-filter: blur(10px);
-}
-
-.pastel-card .card-footer a {
-    color: inherit !important;
-    font-weight: 500;
-}
-
-/* Section headers with subtle styling */
-.section-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-left: 4px solid #6c757d;
-    color: #495057;
-}
-
-/* Additional dashboard styles */
-.text-white-50 {
-    color: rgba(255,255,255,0.5) !important;
-}
-.text-white-75 {
-    color: rgba(255,255,255,0.75) !important;
-}
-.card-footer {
-    padding: 0.5rem 1rem;
-}
-</style>
+{% load static %}
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -133,11 +21,11 @@
                     <p class="text-muted mb-0">Welcome back, {{ user.get_display_name }}!</p>
                 </div>
                 <div class="btn-group">
-                    <a href="{% url 'jobs:create' %}" class="btn btn-primary">
+                    <a href="{% url 'jobs:create' %}" class="btn btn-outline-primary">
                         <i class="bi bi-plus-circle me-2"></i>
                         New Job
                     </a>
-                    <a href="{% url 'accounts:client_create' %}" class="btn btn-success">
+                    <a href="{% url 'accounts:client_create' %}" class="btn btn-outline-primary">
                         <i class="bi bi-person-plus me-2"></i>
                         New Client
                     </a>
@@ -149,11 +37,11 @@
     <!-- Workflow Status Cards -->
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card card-urgent pastel-card h-100">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title">Urgent Orders</h6>
+                            <h5 class="card-title">Urgent Orders</h5>
                             <h2 class="mb-0">{{ urgent_count|default:0 }}</h2>
                             <small>Needs immediate attention</small>
                         </div>
@@ -171,11 +59,11 @@
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card card-approved pastel-card h-100">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title">Approved Orders</h6>
+                            <h5 class="card-title">Approved Orders</h5>
                             <h2 class="mb-0">{{ approved_count|default:0 }}</h2>
                             <small>Ready for production</small>
                         </div>
@@ -193,11 +81,11 @@
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card card-waiting-manager pastel-card h-100">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title">Waiting Manager Approval</h6>
+                            <h5 class="card-title">Waiting Manager Approval</h5>
                             <h2 class="mb-0">{{ waiting_manager_count|default:0 }}</h2>
                             <small>Needs manager review</small>
                         </div>
@@ -215,11 +103,11 @@
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card card-waiting-client pastel-card h-100">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title">Waiting Client Approval</h6>
+                            <h5 class="card-title">Waiting Client Approval</h5>
                             <h2 class="mb-0">{{ waiting_client_count|default:0 }}</h2>
                             <small>Awaiting client response</small>
                         </div>
@@ -239,16 +127,16 @@
 
     <div class="row">
         <!-- Workflow Jobs Lists -->
-        <div class="col-lg-8">
+        <div class="col-12">
             <!-- Urgent Orders -->
             {% if urgent_jobs %}
             <div class="card mb-4">
-                <div class="card-header section-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         Urgent Orders ({{ urgent_count }})
                     </h5>
-                    <a href="{% url 'jobs:list' %}?status=urgent" class="text-white text-decoration-none">
+                    <a href="{% url 'jobs:list' %}?status=urgent" class="text-decoration-none">
                         <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
@@ -290,12 +178,12 @@
             <!-- Approved Orders -->
             {% if approved_jobs %}
             <div class="card mb-4">
-                <div class="card-header section-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-check-circle me-2"></i>
                         Approved Orders ({{ approved_count }})
                     </h5>
-                    <a href="{% url 'jobs:list' %}?status=approved" class="text-white text-decoration-none">
+                    <a href="{% url 'jobs:list' %}?status=approved" class="text-decoration-none">
                         <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
@@ -337,12 +225,12 @@
             <!-- Waiting Manager Approval -->
             {% if waiting_manager_jobs %}
             <div class="card mb-4">
-                <div class="card-header section-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-person-check me-2"></i>
                         Waiting Manager Approval ({{ waiting_manager_count }})
                     </h5>
-                    <a href="{% url 'jobs:list' %}?status=waiting_manager" class="text-dark text-decoration-none">
+                    <a href="{% url 'jobs:list' %}?status=waiting_manager" class="text-decoration-none">
                         <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
@@ -384,12 +272,12 @@
             <!-- Waiting Client Approval -->
             {% if waiting_client_jobs %}
             <div class="card mb-4">
-                <div class="card-header section-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-clock me-2"></i>
                         Waiting Client Approval ({{ waiting_client_count }})
                     </h5>
-                    <a href="{% url 'jobs:list' %}?status=waiting_client" class="text-white text-decoration-none">
+                    <a href="{% url 'jobs:list' %}?status=waiting_client" class="text-decoration-none">
                         <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
@@ -441,95 +329,6 @@
                 </div>
             </div>
             {% endif %}
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Summary -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="bi bi-bar-chart me-2"></i>
-                        Summary
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-6 mb-3">
-                            <div class="h5 text-primary mb-1">{{ total_active_jobs|default:0 }}</div>
-                            <div class="small text-muted">Active Jobs</div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="h5 text-success mb-1">{{ total_templates|default:0 }}</div>
-                            <div class="small text-muted">Templates</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="bi bi-lightning me-2"></i>
-                        Quick Actions
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'jobs:create' %}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-2"></i>Create New Job
-                        </a>
-                        <a href="{% url 'accounts:client_create' %}" class="btn btn-success">
-                            <i class="bi bi-person-plus me-2"></i>Add New Client
-                        </a>
-                        <a href="{% url 'jobs:templates' %}" class="btn btn-info">
-                            <i class="bi bi-files me-2"></i>Browse Templates
-                        </a>
-                        <a href="{% url 'jobs:list' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-list me-2"></i>View All Jobs
-                        </a>
-                        {% if user.is_superuser_type %}
-                        <a href="/admin/" class="btn btn-outline-secondary">
-                            <i class="bi bi-shield-check me-2"></i>Admin Panel
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- User Info -->
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="bi bi-person me-2"></i>
-                        User Info
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="small">
-                        <div class="row g-1 mb-2">
-                            <div class="col-5"><strong>Role:</strong></div>
-                            <div class="col-7">
-                                <span class="badge
-                                    {% if user.is_superuser_type %}bg-danger
-                                    {% elif user.is_staff_type %}bg-warning text-dark
-                                    {% else %}bg-info{% endif %}">
-                                    {{ user.get_user_type_display }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="row g-1 mb-2">
-                            <div class="col-5"><strong>Last Login:</strong></div>
-                            <div class="col-7">{{ user.last_login|date:"M d, H:i"|default:"First time" }}</div>
-                        </div>
-                        <div class="row g-1">
-                            <div class="col-5"><strong>Member Since:</strong></div>
-                            <div class="col-7">{{ user.date_joined|date:"M Y" }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>

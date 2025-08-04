@@ -8,8 +8,8 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="bi bi-file-earmark me-2"></i>Paper Types</h2>
-                {% if user.is_superuser_type %}
-                    <a href="/admin/operations/papertype/add/" class="btn btn-primary">
+                {% if user.is_superuser_type or user.is_superuser %}
+                    <a href="{% url 'operations:paper_type_create' %}" class="btn btn-primary">
                         <i class="bi bi-plus-lg me-1"></i>Add Paper Type
                     </a>
                 {% endif %}
@@ -25,7 +25,7 @@
                                 <th>Price per KG</th>
                                 <th>Description</th>
                                 <th>Status</th>
-                                {% if user.is_superuser_type %}
+                                {% if user.is_superuser_type or user.is_superuser %}
                                     <th>Actions</th>
                                 {% endif %}
                             </tr>
@@ -56,11 +56,15 @@
                                             <span class="badge bg-secondary">Inactive</span>
                                         {% endif %}
                                     </td>
-                                    {% if user.is_superuser_type %}
+                                    {% if user.is_superuser_type or user.is_superuser %}
                                         <td>
-                                            <a href="/admin/operations/papertype/{{ paper_type.pk }}/change/" 
-                                               class="btn btn-outline-primary btn-sm">
+                                            <a href="{% url 'operations:paper_type_edit' paper_type.pk %}" 
+                                               class="btn btn-outline-primary btn-sm me-1">
                                                 <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'operations:paper_type_delete' paper_type.pk %}" 
+                                               class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-trash"></i>
                                             </a>
                                         </td>
                                     {% endif %}
@@ -103,8 +107,8 @@
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle me-2"></i>
                     No paper types found. 
-                    {% if user.is_superuser_type %}
-                        <a href="/admin/operations/papertype/add/">Create your first paper type</a>.
+                    {% if user.is_superuser_type or user.is_superuser %}
+                        <a href="{% url 'operations:paper_type_create' %}">Create your first paper type</a>.
                     {% else %}
                         Contact an administrator to add paper types.
                     {% endif %}

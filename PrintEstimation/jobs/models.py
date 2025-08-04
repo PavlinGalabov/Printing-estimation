@@ -430,6 +430,45 @@ class JobOperation(models.Model):
         return timedelta(minutes=self.total_time_minutes)
 
 
+class JobPDFExport(models.Model):
+    """Track PDF exports of jobs."""
+    EXPORT_TYPES = [
+        ('estimate', 'Estimate/Quote'),
+        ('job_sheet', 'Job Sheet'),
+    ]
+    
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.CASCADE,
+        related_name='pdf_exports'
+    )
+    export_type = models.CharField(max_length=20, choices=EXPORT_TYPES)
+    file_name = models.CharField(max_length=255)
+    file_path = models.FileField(upload_to='exports/pdfs/')
+    created_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    file_size = models.PositiveIntegerField(default=0)  # in bytes
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Job PDF Export'
+        verbose_name_plural = 'Job PDF Exports'
+    
+    def __str__(self):
+        return f"{self.job.order_name} - {self.get_export_type_display()}"
+    
+    @property
+    def file_size_mb(self):
+        """Return file size in MB."""
+        if self.file_size:
+            return round(self.file_size / (1024 * 1024), 2)
+        return 0
+
+
 class JobVariant(models.Model):
     """
     Calculated costs for different quantities of the same job.

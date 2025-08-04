@@ -4,6 +4,11 @@
 {% if object %}Edit Client{% else %}Create New Client{% endif %} - Printing Estimation
 {% endblock %}
 
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'css/forms.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="container my-4">
     <div class="row">

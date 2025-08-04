@@ -6,59 +6,8 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
-/* Common styles */
-.operation-item {
-    border-left: 4px solid #dee2e6;
-    transition: all 0.3s ease;
-    user-select: none;
-}
-.operation-item:hover {
-    border-left-color: #007bff;
-    background-color: #f8f9fa;
-}
-.operation-item.calculated {
-    border-left-color: #28a745;
-}
-
-/* Calculate mode specific styles */
-.sortable-operations {
-    min-height: 100px;
-}
-.drag-handle {
-    cursor: grab;
-    opacity: 0.5;
-    transition: opacity 0.2s ease;
-}
-.operation-item:hover .drag-handle {
-    opacity: 1;
-}
-.operation-item.dragging {
-    opacity: 0.5;
-    transform: rotate(2deg);
-}
-.calculation-result {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-.add-operation-btn {
-    border: 2px dashed #dee2e6;
-    background: transparent;
-    transition: all 0.3s ease;
-}
-.add-operation-btn:hover {
-    border-color: #007bff;
-    background-color: #f8f9fa;
-}
-
-/* Fix dropdown z-index */
-.dropdown-menu {
-    z-index: 9999 !important;
-}
-.btn-group .dropdown-menu {
-    z-index: 9999 !important;
-}
-</style>
+{% load static %}
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -336,7 +285,7 @@
                                         </td>
                                         <td>
                                             {% if job_op.total_time_minutes > 0 %}
-                                                {{ job_op.total_time_minutes }} min
+                                                {{ job_op.total_time_minutes|hours_minutes }}
                                             {% else %}
                                                 <span class="text-muted">-</span>
                                             {% endif %}
@@ -404,7 +353,7 @@
                                         </td>
                                         <td>
                                             {% if op.total_time_minutes > 0 %}
-                                                {{ op.total_time_minutes }} min
+                                                {{ op.total_time_minutes|hours_minutes }}
                                             {% else %}
                                                 <span class="text-muted">-</span>
                                             {% endif %}
@@ -454,8 +403,8 @@
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <div class="text-center p-3 bg-success text-white rounded">
-                                <h4 class="mb-1">{{ job.total_time_minutes|default:"0" }}</h4>
-                                <small>Total Minutes</small>
+                                <h4 class="mb-1">{{ job.total_time_minutes|hours_minutes }}</h4>
+                                <small>Total Time</small>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
@@ -527,7 +476,7 @@
                                     <td><strong>{{ variant.quantity|floatformat:0 }}</strong></td>
                                     <td>€{{ variant.total_cost|floatformat:2 }}</td>
                                     <td>€{{ variant.cost_per_piece|floatformat:3 }}</td>
-                                    <td>{{ variant.total_time_minutes }} min</td>
+                                    <td>{{ variant.total_time_minutes|hours_minutes }}</td>
                                     <td>
                                         {% if job.total_cost and job.quantity %}
                                             {% with original_per_piece=job.total_cost|div:job.quantity %}
@@ -622,7 +571,7 @@
                                 {% if job.total_time %}
                                 <div class="small opacity-75">
                                     <i class="bi bi-clock me-1"></i>
-                                    {{ job.total_time_minutes }} minutes
+                                    {{ job.total_time_minutes|hours_minutes }}
                                 </div>
                                 {% endif %}
                             </div>

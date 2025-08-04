@@ -58,6 +58,17 @@ class JobForm(forms.ModelForm):
         self.fields['end_size'].queryset = PaperSize.objects.all()
         self.fields['printing_size'].queryset = PaperSize.objects.all()
         self.fields['selling_size'].queryset = PaperSize.objects.all()
+        
+        # If printing_size is selected and has parent, auto-populate selling fields
+        if self.instance and self.instance.pk and self.instance.printing_size:
+            printing_size = self.instance.printing_size
+            parent_size = printing_size.get_parent_size_for_job()
+            parts_of_parent = printing_size.get_parts_of_parent_for_job()
+            
+            if not self.instance.selling_size:
+                self.instance.selling_size = parent_size
+            if not self.instance.parts_of_selling_size or self.instance.parts_of_selling_size == 1:
+                self.instance.parts_of_selling_size = parts_of_parent
 
         # Add help text
         self.fields['parts_of_selling_size'].help_text = "How many printing sheets fit in one parent sheet"
@@ -143,3 +154,103 @@ class JobOperationForm(forms.ModelForm):
         if job:
             next_order = job.job_operations.count() + 1
             self.initial['sequence_order'] = next_order
+
+
+class JobStatusChangeForm(forms.ModelForm):
+    """Form for changing job status without JavaScript."""
+    
+    class Meta:
+        model = Job
+        fields = ['status']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].label = 'Change Status To'
+
+
+class JobCalculationForm(forms.Form):
+    """Form for triggering job calculations."""
+    
+    action = forms.CharField(widget=forms.HiddenInput(), initial='calculate')
+
+
+class AddOperationForm(forms.Form):
+    """Form for adding an operation to a job."""
+    
+    operation = forms.ModelChoiceField(
+        queryset=Operation.objects.filter(is_active=True),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        empty_label="Select an operation to add..."
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Group operations by category for better UX
+        self.fields['operation'].queryset = Operation.objects.filter(
+            is_active=True
+        ).select_related('category').order_by('category__sort_order', 'name')
+
+
+class AddOperationAfterForm(forms.Form):
+    """Form for adding an operation after a specific position."""
+    
+    operation = forms.ModelChoiceField(
+        queryset=Operation.objects.filter(is_active=True),
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+        empty_label="Select operation to add..."
+    )
+    after_operation_id = forms.IntegerField(widget=forms.HiddenInput())
+    operation_parameters = forms.CharField(required=False, widget=forms.HiddenInput())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Group operations by category for better UX
+        self.fields['operation'].queryset = Operation.objects.filter(
+            is_active=True
+        ).select_related('category').order_by('category__sort_order', 'name')
+        
+    def clean_operation_parameters(self):
+        """Parse JSON parameters if provided."""
+        params_str = self.cleaned_data.get('operation_parameters', '')
+        if params_str:
+            try:
+                import json
+                return json.loads(params_str)
+            except json.JSONDecodeError:
+                return {}
+        return {}
+
+
+class RemoveOperationForm(forms.Form):
+    """Form for removing an operation from a job."""
+    
+    operation_id = forms.IntegerField(widget=forms.HiddenInput())
+    confirm = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label="I confirm I want to remove this operation"
+    )
+
+
+class ReorderOperationsForm(forms.Form):
+    """Form for reordering operations."""
+    
+    # Fields for each operation ID and its new sequence order
+    def __init__(self, *args, **kwargs):
+        job = kwargs.pop('job', None)
+        super().__init__(*args, **kwargs)
+        
+        if job:
+            operations = job.job_operations.all().order_by('sequence_order')
+            for op in operations:
+                field_name = f'operation_{op.id}_order'
+                self.fields[field_name] = forms.IntegerField(
+                    min_value=1,
+                    max_value=operations.count(),
+                    initial=op.sequence_order,
+                    widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
+                    label=f'{op.operation_name} - Order'
+                )

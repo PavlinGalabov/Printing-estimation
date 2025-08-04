@@ -8,8 +8,8 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="bi bi-aspect-ratio me-2"></i>Paper Sizes</h2>
-                {% if user.is_superuser_type %}
-                    <a href="/admin/operations/papersize/add/" class="btn btn-primary">
+                {% if user.is_superuser_type or user.is_superuser %}
+                    <a href="{% url 'operations:paper_size_create' %}" class="btn btn-primary">
                         <i class="bi bi-plus-lg me-1"></i>Add Paper Size
                     </a>
                 {% endif %}
@@ -45,6 +45,16 @@
                                             {{ paper_size.area_m2|floatformat:4 }} m²
                                         </div>
                                     </div>
+                                    {% if paper_size.parent_size %}
+                                        <div class="row mb-2">
+                                            <div class="col-sm-4">
+                                                <strong>Parent:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <small class="text-primary">{{ paper_size.parent_size.name }} (1/{{ paper_size.parts_of_parent }})</small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                     {% if paper_size.description %}
                                         <div class="row">
                                             <div class="col-sm-4">
@@ -56,12 +66,18 @@
                                         </div>
                                     {% endif %}
                                 </div>
-                                {% if user.is_superuser_type %}
+                                {% if user.is_superuser_type or user.is_superuser %}
                                     <div class="card-footer">
-                                        <a href="/admin/operations/papersize/{{ paper_size.pk }}/change/" 
-                                           class="btn btn-outline-primary btn-sm w-100">
-                                            <i class="bi bi-pencil me-1"></i>Edit
-                                        </a>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'operations:paper_size_edit' paper_size.pk %}" 
+                                               class="btn btn-outline-primary btn-sm flex-fill">
+                                                <i class="bi bi-pencil me-1"></i>Edit
+                                            </a>
+                                            <a href="{% url 'operations:paper_size_delete' paper_size.pk %}" 
+                                               class="btn btn-outline-danger btn-sm flex-fill">
+                                                <i class="bi bi-trash me-1"></i>Delete
+                                            </a>
+                                        </div>
                                     </div>
                                 {% endif %}
                             </div>
@@ -102,8 +118,8 @@
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle me-2"></i>
                     No paper sizes found. 
-                    {% if user.is_superuser_type %}
-                        <a href="/admin/operations/papersize/add/">Create your first paper size</a>.
+                    {% if user.is_superuser_type or user.is_superuser %}
+                        <a href="{% url 'operations:paper_size_create' %}">Create your first paper size</a>.
                     {% else %}
                         Contact an administrator to add paper sizes.
                     {% endif %}

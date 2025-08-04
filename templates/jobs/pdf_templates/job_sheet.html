@@ -1,0 +1,433 @@
+{% load job_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Sheet - {{ job.order_name }}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; font-size: 12px; }
+            .page-break { page-break-before: always; }
+            .card { break-inside: avoid; }
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        .print-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .header-section.urgent {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+        
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-section .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .job-info-card {
+            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .job-info-card.urgent {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .info-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .info-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+        
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .checklist-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        
+        .checklist-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            margin-right: 1rem;
+            background: white;
+            flex-shrink: 0;
+        }
+        
+        .operation-number {
+            background: #007bff;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .operation-details {
+            flex: 1;
+        }
+        
+        .operation-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .operation-meta {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        
+        .notes-section {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #333;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+        }
+        
+        .notes-lines {
+            margin-top: 1rem;
+        }
+        
+        .notes-line {
+            border-bottom: 1px solid #333;
+            height: 25px;
+            margin-bottom: 8px;
+        }
+        
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+        }
+        
+        .signature-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .signature-line {
+            border-bottom: 2px solid #333;
+            height: 30px;
+        }
+        
+        .footer-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .info-table td {
+            padding: 0.5rem 0;
+            border: none;
+        }
+        
+        .info-table td:first-child {
+            font-weight: 600;
+            color: #495057;
+            width: 40%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Button -->
+    <button class="btn btn-success print-button no-print" onclick="window.print()">
+        <i class="bi bi-printer me-2"></i>Print Job Sheet
+    </button>
+    
+    <div class="print-container">
+        <!-- Header -->
+        <div class="header-section{% if job.status == 'urgent' %} urgent{% endif %}">
+            <h1><i class="bi bi-list-check me-3"></i>PRODUCTION JOB SHEET</h1>
+            <div class="subtitle">
+                {% if job.status == 'urgent' %}
+                    <i class="bi bi-exclamation-triangle me-2"></i>URGENT ORDER - PRIORITY PRODUCTION
+                {% else %}
+                    Manufacturing Instructions & Quality Control
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Job Basics -->
+        <div class="job-info-card{% if job.status == 'urgent' %} urgent{% endif %}">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Job Number</div>
+                    <div class="info-value">{{ job.job_number|default:"DRAFT" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Order Name</div>
+                    <div class="info-value">{{ job.order_name|upper }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Client</div>
+                    <div class="info-value">{{ job.client.company_name|upper }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Quantity</div>
+                    <div class="info-value">{{ job.quantity|floatformat:0 }} PIECES</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Deadline</div>
+                    <div class="info-value">
+                        {% if job.deadline %}
+                            {{ job.deadline|date:"Y-m-d H:i" }}
+                            {% if job.status == 'urgent' %}<br><small><i class="bi bi-exclamation-triangle me-1"></i>URGENT</small>{% endif %}
+                        {% else %}
+                            Not Set
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">
+                        <span class="badge 
+                            {% if job.status == 'draft' %}bg-secondary
+                            {% elif job.status == 'calculated' %}bg-info
+                            {% elif job.status == 'waiting_manager' %}bg-warning text-dark
+                            {% elif job.status == 'waiting_client' %}bg-primary
+                            {% elif job.status == 'approved' %}bg-success
+                            {% elif job.status == 'urgent' %}bg-danger
+                            {% elif job.status == 'finished' %}bg-dark
+                            {% else %}bg-secondary{% endif %} fs-6">
+                            {{ job.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Specifications -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Production Specifications
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless info-table">
+                            <tr>
+                                <td><strong>Paper Type:</strong></td>
+                                <td>{{ job.paper_type.name }} ({{ job.paper_type.weight_gsm }}gsm)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>End Size:</strong></td>
+                                <td>
+                                    {% if job.end_size %}
+                                        {{ job.end_size }}
+                                    {% else %}
+                                        {{ job.custom_end_width }}×{{ job.custom_end_height }} cm
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Print Size:</strong></td>
+                                <td>{{ job.printing_size }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Parent Size:</strong></td>
+                                <td>{{ job.selling_size }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Parts/Parent:</strong></td>
+                                <td>{{ job.parts_of_selling_size }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless info-table">
+                            <tr>
+                                <td><strong>N-up:</strong></td>
+                                <td>{{ job.n_up }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Colors Front:</strong></td>
+                                <td>{{ job.colors_front }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Colors Back:</strong></td>
+                                <td>{{ job.colors_back }}</td>
+                            </tr>
+                            {% if job.print_run %}
+                            <tr>
+                                <td><strong>Print Run:</strong></td>
+                                <td>{{ job.print_run|floatformat:0 }} sheets</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Sheets to Buy:</strong></td>
+                                <td>{{ job.sheets_to_buy|floatformat:0 }} sheets</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Operations Checklist -->
+        {% if operations %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-check me-2"></i>Operations Checklist
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for operation in operations %}
+                <div class="checklist-item">
+                    <span class="checkbox"></span>
+                    <span class="operation-number">{{ operation.sequence_order }}</span>
+                    <div class="operation-details">
+                        <div class="operation-name">{{ operation.operation_name }}</div>
+                        <div class="operation-meta">
+                            <i class="bi bi-tag me-1"></i>{{ operation.operation.category.name }}
+                            {% if operation.total_time_minutes %}
+                                <i class="bi bi-clock ms-2 me-1"></i>Est. {{ operation.total_time_minutes|hours_minutes }}
+                            {% endif %}
+                            {% if operation.colors_used %}
+                                <i class="bi bi-palette ms-2 me-1"></i>{{ operation.colors_used }} colors
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        <!-- Production Notes -->
+        <div class="notes-section">
+            <h5 class="mb-3">
+                <i class="bi bi-pencil-square me-2"></i>Production Notes
+            </h5>
+            
+            {% if job.notes %}
+            <div class="alert alert-light mb-3">
+                <strong><i class="bi bi-info-circle me-2"></i>Job Notes:</strong><br>
+                {{ job.notes|linebreaks }}
+            </div>
+            {% endif %}
+            
+            <div class="mb-3">
+                <strong><i class="bi bi-journal-text me-2"></i>Additional Notes & Instructions:</strong>
+            </div>
+            <div class="notes-lines">
+                {% for i in "12345678" %}
+                <div class="notes-line"></div>
+                {% endfor %}
+            </div>
+            
+            <!-- Signature Section -->
+            <div class="signature-grid">
+                <div class="signature-item">
+                    <strong><i class="bi bi-person me-2"></i>Started by:</strong>
+                    <div class="signature-line"></div>
+                    <strong class="mt-3"><i class="bi bi-clock me-2"></i>Start time:</strong>
+                    <div class="signature-line"></div>
+                </div>
+                <div class="signature-item">
+                    <strong><i class="bi bi-person-check me-2"></i>Completed by:</strong>
+                    <div class="signature-line"></div>
+                    <strong class="mt-3"><i class="bi bi-clock me-2"></i>End time:</strong>
+                    <div class="signature-line"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer-section">
+            <p class="mb-1"><strong>Generated:</strong> {{ generated_at|date:"Y-m-d H:i" }}</p>
+            <p class="mb-0"><i class="bi bi-info-circle me-2"></i>Please check all items before starting production and sign when complete.</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

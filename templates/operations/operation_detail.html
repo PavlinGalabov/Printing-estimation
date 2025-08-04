@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load job_filters %}
 
 {% block title %}{{ operation.name }} - Operations - {{ block.super }}{% endblock %}
 
@@ -94,7 +95,7 @@
                                     <strong>Setup Time:</strong>
                                 </div>
                                 <div class="col-sm-5">
-                                    {{ operation.makeready_time_minutes }} min
+                                    {{ operation.makeready_time_minutes|hours_minutes }}
                                 </div>
                             </div>
                             {% if operation.cleaning_time_minutes > 0 %}
@@ -103,7 +104,7 @@
                                         <strong>Cleaning Time:</strong>
                                     </div>
                                     <div class="col-sm-5">
-                                        {{ operation.cleaning_time_minutes }} min/color
+                                        {{ operation.cleaning_time_minutes|hours_minutes }}/color
                                     </div>
                                 </div>
                             {% endif %}
