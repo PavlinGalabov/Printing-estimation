@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if operation %}Edit Operation{% else %}Create Operation{% endif %} - {{ block.super }}
+{% endblock %}
+
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'css/forms.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="bi bi-gear me-2"></i>
+                        {% if operation %}Edit Operation{% else %}Create New Operation{% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                {{ form.name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.category|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        {{ form.description|as_crispy_field }}
+
+                        <hr>
+                        <h5><i class="bi bi-calculator me-2"></i>Cost Formula</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.makeready_price|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.price_per_sheet|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.plate_price|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h5><i class="bi bi-trash3 me-2"></i>Waste Calculation</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.base_waste_sheets|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.waste_percentage|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h5><i class="bi bi-clock me-2"></i>Time Formula</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.makeready_time_minutes|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.cleaning_time_minutes|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.sheets_per_minute|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h5><i class="bi bi-arrow-repeat me-2"></i>Quantity Effects</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.divides_quantity_by|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.multiplies_quantity_by|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h5><i class="bi bi-toggles me-2"></i>Operation Behavior</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.uses_colors|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.uses_front_colors_only|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.is_active|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'operations:list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>
+                                {% if operation %}Update Operation{% else %}Create Operation{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

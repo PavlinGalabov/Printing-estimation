@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Job - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Confirm Delete
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-file-earmark-x text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h5 class="text-center mb-3">Delete Job</h5>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> You are about to delete this job permanently.
+                    </div>
+                    
+                    <div class="job-info bg-light p-3 rounded mb-4">
+                        <div class="row mb-2">
+                            <div class="col-sm-4"><strong>Job Name:</strong></div>
+                            <div class="col-sm-8">{{ object.order_name }}</div>
+                        </div>
+                        {% if object.client %}
+                        <div class="row mb-2">
+                            <div class="col-sm-4"><strong>Client:</strong></div>
+                            <div class="col-sm-8">{{ object.client.company_name }}</div>
+                        </div>
+                        {% endif %}
+                        {% if object.total_cost %}
+                        <div class="row mb-2">
+                            <div class="col-sm-4"><strong>Total Cost:</strong></div>
+                            <div class="col-sm-8">${{ object.total_cost|floatformat:2 }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="row mb-2">
+                            <div class="col-sm-4"><strong>Status:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge bg-secondary">{{ object.get_status_display }}</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Created:</strong></div>
+                            <div class="col-sm-8">{{ object.created_at|date:"M d, Y" }}</div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-muted text-center">
+                        This action cannot be undone. All data associated with this job will be permanently removed.
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'jobs:detail' object.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Delete Job
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

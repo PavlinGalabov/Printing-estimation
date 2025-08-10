@@ -1,0 +1,40 @@
+{% comment %}
+Reusable action buttons component for list tables
+Usage: {% include 'components/action_buttons.html' with object=job detail_url='jobs:detail' edit_url='jobs:edit' delete_url='jobs:delete' %}
+{% endcomment %}
+
+<div class="btn-group btn-group-sm" role="group">
+    {% if detail_url %}
+    <a href="{% url detail_url object.pk %}" class="btn btn-outline-primary" title="View Details">
+        <i class="bi bi-eye"></i>
+    </a>
+    {% endif %}
+    
+    {% if edit_url %}
+    <a href="{% url edit_url object.pk %}" class="btn btn-outline-secondary" title="Edit">
+        <i class="bi bi-pencil"></i>
+    </a>
+    {% endif %}
+    
+    {% if calculate_url and object.status == 'draft' or object.status == 'calculated' %}
+    <a href="{% url detail_url object.pk %}" class="btn btn-outline-success" title="View & Calculate">
+        <i class="bi bi-calculator"></i>
+    </a>
+    {% endif %}
+    
+    {% if delete_url %}
+    <a href="{% url delete_url object.pk %}" class="btn btn-outline-danger" title="Delete">
+        <i class="bi bi-trash"></i>
+    </a>
+    {% endif %}
+    
+    {% if custom_actions %}
+        {% for action in custom_actions %}
+        <a href="{% url action.url object.pk %}" 
+           class="btn btn-outline-{{ action.style|default:'primary' }}" 
+           title="{{ action.title }}">
+            <i class="bi bi-{{ action.icon }}"></i>
+        </a>
+        {% endfor %}
+    {% endif %}
+</div>

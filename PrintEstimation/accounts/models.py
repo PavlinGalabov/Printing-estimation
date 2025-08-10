@@ -50,6 +50,12 @@ class User(AbstractUser):
             return self.get_full_name()
         return self.username
 
+    def is_staff_user(self):
+        """Check if user has staff-level permissions."""
+        return (self.user_type == 'staff' or 
+                self.is_staff or 
+                self.is_superuser)
+
     @property
     def is_superuser_type(self):
         """Check if user is superuser type."""
@@ -173,18 +179,29 @@ class Client(models.Model):
 
     def get_jobs_count(self):
         """Get total number of jobs for this client."""
-        return self.jobs.count()
+        try:
+            return self.jobs.count()
+        except Exception:
+            # If there's any import error, return 0
+            return 0
 
     def get_total_revenue(self):
         """Calculate total revenue from this client."""
-        from django.db.models import Sum
-        from jobs.models import Job
+        try:
+            from django.db.models import Sum
+            from django.apps import apps
+            
+            # Use apps.get_model to avoid import issues
+            Job = apps.get_model('jobs', 'Job')
+            
+            total = Job.objects.filter(
+                client=self,
+                status__in=['approved', 'completed']
+            ).aggregate(
+                total=Sum('total_material_cost') + Sum('total_labor_cost') + Sum('total_outsourcing_cost')
+            )['total']
 
-        total = Job.objects.filter(
-            client=self,
-            status__in=['approved', 'completed']
-        ).aggregate(
-            total=Sum('total_material_cost') + Sum('total_labor_cost') + Sum('total_outsourcing_cost')
-        )['total']
-
-        return total or 0
+            return total or 0
+        except Exception:
+            # If there's any import error, return 0
+            return 0

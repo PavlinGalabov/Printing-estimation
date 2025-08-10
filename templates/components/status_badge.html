@@ -1,0 +1,17 @@
+{% comment %}
+Reusable status badge component
+Usage: {% include 'components/status_badge.html' with status=job.status display_text=job.get_status_display %}
+{% endcomment %}
+
+<span class="badge{% if class %} {{ class }}{% endif %}
+    {% if status == 'draft' %} bg-secondary
+    {% elif status == 'calculated' %} bg-info
+    {% elif status == 'waiting_manager' %} bg-warning text-dark
+    {% elif status == 'waiting_client' %} bg-primary
+    {% elif status == 'approved' %} bg-success
+    {% elif status == 'urgent' %} bg-danger
+    {% elif status == 'finished' %} bg-dark
+    {% elif status == 'rejected' %} bg-danger
+    {% else %} bg-secondary{% endif %}">
+    {{ display_text|default:status|title }}
+</span>

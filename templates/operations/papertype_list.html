@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Paper Types - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-file-earmark me-2"></i>Paper Types</h2>
+                {% if user.is_superuser_type or user.is_superuser %}
+                    <a href="{% url 'operations:paper_type_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Add Paper Type
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if paper_types %}
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Weight (GSM)</th>
+                                        <th>Price per KG</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        {% if user.is_superuser_type or user.is_superuser %}
+                                            <th>Actions</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for paper_type in paper_types %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ paper_type.name }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ paper_type.weight_gsm }} gsm</span>
+                                            </td>
+                                            <td>
+                                                <strong>${{ paper_type.price_per_kg }}</strong>
+                                            </td>
+                                            <td>
+                                                {% if paper_type.description %}
+                                                    {{ paper_type.description|truncatewords:10 }}
+                                                {% else %}
+                                                    <span class="text-muted fst-italic">No description</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if paper_type.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                            {% if user.is_superuser_type or user.is_superuser %}
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a href="{% url 'operations:paper_type_edit' paper_type.pk %}" 
+                                                           class="btn btn-outline-primary" title="Edit">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                        <a href="{% url 'operations:paper_type_delete' paper_type.pk %}" 
+                                                           class="btn btn-outline-danger" title="Delete">
+                                                            <i class="bi bi-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            {% endif %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {% if is_paginated %}
+                    <nav aria-label="Paper types pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">&laquo; First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-file-earmark text-muted" style="font-size: 4rem;"></i>
+                        <h3 class="mt-3 text-muted">No Paper Types Found</h3>
+                        <p class="text-muted">
+                            {% if user.is_superuser_type or user.is_superuser %}
+                                You haven't added any paper types yet. Start by creating your first paper type.
+                            {% else %}
+                                Contact an administrator to add paper types.
+                            {% endif %}
+                        </p>
+                        {% if user.is_superuser_type or user.is_superuser %}
+                            <a href="{% url 'operations:paper_type_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-lg me-2"></i>
+                                Create Your First Paper Type
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

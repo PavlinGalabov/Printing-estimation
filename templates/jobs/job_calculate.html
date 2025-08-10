@@ -3,44 +3,19 @@
 {% block title %}Calculate - {{ job.order_name }} - Printing Estimation{% endblock %}
 
 {% block extra_css %}
-<style>
-.operation-item {
-    border-left: 4px solid #dee2e6;
-    transition: all 0.3s ease;
-}
-.operation-item:hover {
-    border-left-color: #007bff;
-    background-color: #f8f9fa;
-}
-.operation-item.calculated {
-    border-left-color: #28a745;
-}
-.sortable-operations {
-    min-height: 100px;
-}
-.calculation-result {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-.add-operation-btn {
-    border: 2px dashed #dee2e6;
-    background: transparent;
-    transition: all 0.3s ease;
-}
-.add-operation-btn:hover {
-    border-color: #007bff;
-    background-color: #f8f9fa;
-}
-</style>
+{% load static %}
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 <div class="container my-4">
+    <!-- Hidden CSRF token for AJAX requests -->
+    {% csrf_token %}
     <div class="row">
         <div class="col-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'jobs:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'jobs:list' %}">Jobs</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'jobs:detail' job.pk %}">{{ job.order_name }}</a></li>
                     <li class="breadcrumb-item active">Calculate</li>
@@ -110,13 +85,6 @@
                         {% endif %}
                     </div>
 
-                    {% if job.variant_quantities %}
-                    <hr>
-                    <div class="small">
-                        <strong>Variant Quantities:</strong><br>
-                        <span class="text-muted">{{ job.variant_quantities }}</span>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -129,46 +97,13 @@
                     {% if job.total_time %}
                     <div class="small opacity-75">
                         <i class="bi bi-clock me-1"></i>
-                        {{ job.total_time_minutes }} minutes
+                        {{ job.total_time_minutes|hours_minutes }}
                     </div>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            <!-- Quantity Variants -->
-            {% if job.variants.exists %}
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="bi bi-graph-up me-2"></i>
-                        Quantity Variants
-                    </h6>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Qty</th>
-                                    <th>Total</th>
-                                    <th>Per Pc</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for variant in job.variants.all %}
-                                <tr>
-                                    <td>{{ variant.quantity|floatformat:0 }}</td>
-                                    <td>€{{ variant.total_cost|floatformat:2 }}</td>
-                                    <td>€{{ variant.cost_per_piece|floatformat:3 }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
 
         <!-- Operations Management -->
@@ -176,10 +111,16 @@
             <!-- Current Operations -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="bi bi-list-ol me-2"></i>
-                        Operations Sequence
-                    </h5>
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-ol me-2"></i>
+                            Operations Sequence
+                        </h5>
+                        <small class="text-muted">
+                            <i class="bi bi-grip-vertical me-1"></i>
+                            Drag operations to reorder them
+                        </small>
+                    </div>
                     <button type="button" class="btn btn-success" id="calculateBtn">
                         <i class="bi bi-calculator me-2"></i>
                         Calculate
@@ -217,7 +158,7 @@
                                             {% endif %}
                                             <div class="col-sm-6">
                                                 <i class="bi bi-clock me-1"></i>
-                                                {{ job_op.total_time_minutes }} min
+                                                {{ job_op.total_time_minutes|hours_minutes }}
                                             </div>
                                         </div>
                                         {% else %}
@@ -229,13 +170,13 @@
                                     </div>
 
                                     <div class="d-flex align-items-center ms-3">
+                                        <div class="drag-handle me-2" title="Drag to reorder">
+                                            <i class="bi bi-grip-vertical"></i>
+                                        </div>
                                         <button type="button" class="btn btn-sm btn-outline-danger remove-operation-btn"
                                                 data-operation-id="{{ job_op.id }}" title="Remove">
                                             <i class="bi bi-trash"></i>
                                         </button>
-                                        <div class="ms-2 text-muted" style="cursor: grab;">
-                                            <i class="bi bi-grip-vertical"></i>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -331,6 +272,161 @@ document.addEventListener('DOMContentLoaded', function() {
     calculateBtn.addEventListener('click', function() {
         calculateJob();
     });
+    
+    // Drag and drop functionality
+    let draggedElement = null;
+    let isDragging = false;
+    const operationsContainer = document.getElementById('operationsContainer');
+    
+    function initializeDragAndDrop() {
+        const dragHandles = document.querySelectorAll('.drag-handle');
+        
+        dragHandles.forEach(handle => {
+            handle.addEventListener('mousedown', startDrag);
+        });
+    }
+    
+    function startDrag(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        draggedElement = e.target.closest('.operation-item');
+        if (!draggedElement) return;
+        
+        isDragging = true;
+        draggedElement.classList.add('dragging');
+        
+        // Store initial position
+        const rect = draggedElement.getBoundingClientRect();
+        const offsetY = e.clientY - rect.top;
+        
+        document.addEventListener('mousemove', handleDrag);
+        document.addEventListener('mouseup', endDrag);
+        
+        // Prevent text selection
+        document.body.style.userSelect = 'none';
+    }
+    
+    function handleDrag(e) {
+        if (!isDragging || !draggedElement) return;
+        
+        e.preventDefault();
+        
+        // Find the element we're hovering over
+        const afterElement = getDragAfterElement(operationsContainer, e.clientY);
+        
+        // Insert the dragged element in the correct position
+        if (afterElement == null) {
+            operationsContainer.appendChild(draggedElement);
+        } else {
+            operationsContainer.insertBefore(draggedElement, afterElement);
+        }
+        
+        // Update sequence numbers in real-time
+        updateSequenceNumbers();
+    }
+    
+    function endDrag(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        
+        if (draggedElement) {
+            draggedElement.classList.remove('dragging');
+            
+            // Save the new order
+            saveOperationOrder();
+            
+            draggedElement = null;
+        }
+        
+        // Remove event listeners
+        document.removeEventListener('mousemove', handleDrag);
+        document.removeEventListener('mouseup', endDrag);
+        
+        // Restore text selection
+        document.body.style.userSelect = '';
+    }
+    
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.operation-item:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+    
+    function updateSequenceNumbers() {
+        const operationItems = operationsContainer.querySelectorAll('.operation-item');
+        operationItems.forEach((item, index) => {
+            const badge = item.querySelector('.badge.bg-primary');
+            if (badge) {
+                badge.textContent = index + 1;
+            }
+        });
+    }
+    
+    function saveOperationOrder() {
+        const operationIds = [...operationsContainer.querySelectorAll('.operation-item')]
+            .map(item => item.dataset.operationId)
+            .filter(id => id && id !== 'undefined'); // Filter out any undefined values
+        
+        console.log('Saving operation order:', operationIds);
+        console.log('Job ID:', jobId);
+        
+        if (operationIds.length === 0) {
+            console.log('No operations to reorder');
+            return;
+        }
+        
+        const csrfToken = getCsrfToken();
+        console.log('CSRF Token:', csrfToken ? 'Found' : 'Not found');
+        
+        fetch(`/jobs/${jobId}/reorder-operations/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ operation_ids: operationIds })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            
+            if (data.success) {
+                console.log('Operation order saved successfully');
+            } else {
+                console.error('Server returned error:', data.error);
+                alert(`Error saving operation order: ${data.error}\nPage will reload.`);
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Network/Parse error:', error);
+            alert(`Error saving operation order: ${error.message}\nPage will reload.`);
+            location.reload();
+        });
+    }
+    
+    // Initialize drag and drop
+    initializeDragAndDrop();
 
     function addOperation(operationId) {
         fetch(`/jobs/${jobId}/add-operation/`, {
@@ -409,9 +505,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCsrfToken() {
         // Try to get CSRF token from various sources
         let token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        console.log('CSRF from form token:', token ? 'Found' : 'Not found');
+        
         if (!token) {
             token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            console.log('CSRF from meta tag:', token ? 'Found' : 'Not found');
         }
+        
         if (!token) {
             // Try to get from cookie
             const cookieValue = document.cookie
@@ -419,7 +519,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 .find(row => row.startsWith('csrftoken='))
                 ?.split('=')[1];
             token = cookieValue;
+            console.log('CSRF from cookie:', token ? 'Found' : 'Not found');
         }
+        
+        if (!token) {
+            // Try Django's default cookie name
+            const csrfCookie = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrfmiddlewaretoken='))
+                ?.split('=')[1];
+            token = csrfCookie;
+            console.log('CSRF from middleware cookie:', token ? 'Found' : 'Not found');
+        }
+        
+        console.log('Final CSRF token:', token ? token.substring(0, 10) + '...' : 'None');
         return token || '';
     }
 });

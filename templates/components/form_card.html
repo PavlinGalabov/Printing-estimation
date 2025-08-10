@@ -1,0 +1,33 @@
+{% comment %}
+Reusable form card component
+Usage: {% include 'components/form_card.html' with title="Basic Information" icon="info-circle" %}
+Content goes between the include and the end
+{% endcomment %}
+
+<div class="card{% if class %} {{ class }}{% endif %}">
+    {% if title %}
+    <div class="card-header">
+        <h5 class="mb-0">
+            {% if icon %}
+            <i class="bi bi-{{ icon }} me-2"></i>
+            {% endif %}
+            {{ title }}
+        </h5>
+        {% if subtitle %}
+        <small class="text-muted">{{ subtitle }}</small>
+        {% endif %}
+    </div>
+    {% endif %}
+    <div class="card-body{% if padding %} {{ padding }}{% endif %}">
+        {% if content %}
+            {{ content }}
+        {% else %}
+            {% comment %}Content will be provided by the including template{% endcomment %}
+        {% endif %}
+    </div>
+    {% if footer %}
+    <div class="card-footer{{ footer_class }}">
+        {{ footer }}
+    </div>
+    {% endif %}
+</div>

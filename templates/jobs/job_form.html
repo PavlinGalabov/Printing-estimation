@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'css/forms.css' %}" rel="stylesheet">
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block title %}
 {% if object %}Edit Job{% else %}Create New Job{% endif %} - Printing Estimation
 {% endblock %}
@@ -11,23 +17,45 @@
         <div class="col-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'jobs:dashboard' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'jobs:list' %}">Jobs</a></li>
-                    <li class="breadcrumb-item active">
-                        {% if object %}Edit Job{% else %}New Job{% endif %}
-                    </li>
+                    <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Dashboard</a></li>
+                    {% if using_template %}
+                        <li class="breadcrumb-item"><a href="{% url 'jobs:templates' %}">Templates</a></li>
+                        <li class="breadcrumb-item active">Create from Template</li>
+                    {% else %}
+                        <li class="breadcrumb-item"><a href="{% url 'jobs:list' %}">Jobs</a></li>
+                        <li class="breadcrumb-item active">
+                            {% if object %}Edit Job{% else %}New Job{% endif %}
+                        </li>
+                    {% endif %}
                 </ol>
             </nav>
             
             <h1 class="display-6 mb-4">
                 <i class="bi bi-{% if object %}pencil{% else %}plus-circle{% endif %} me-2"></i>
-                {% if object %}Edit Job: {{ object.order_name }}{% else %}Create New Job{% endif %}
+                {% if object %}
+                    Edit Job: {{ object.order_name }}
+                {% elif using_template %}
+                    Create Job from Template: {{ using_template.template_name|default:using_template.order_name }}
+                {% else %}
+                    Create New Job
+                {% endif %}
             </h1>
+            
+            {% if using_template %}
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Using Template:</strong> {{ using_template.template_name|default:using_template.order_name }}
+                    <br><small>All fields have been pre-filled from the template. You can modify them as needed.</small>
+                </div>
+            {% endif %}
         </div>
     </div>
     
     <form method="post" id="jobForm">
         {% csrf_token %}
+        
+        <!-- Hidden field to store operations for new jobs -->
+        <input type="hidden" id="selectedOperations" name="selected_operations" value="">
         
         <div class="row">
             <!-- Main Form -->
@@ -66,7 +94,7 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-8">
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.order_name.id_for_label }}" class="form-label">
                                         <i class="bi bi-card-text me-1"></i>Order Name *
@@ -77,7 +105,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label for="{{ form.quantity.id_for_label }}" class="form-label">
                                         <i class="bi bi-123 me-1"></i>Quantity *
@@ -85,6 +113,31 @@
                                     {{ form.quantity }}
                                     {% if form.quantity.errors %}
                                         <div class="text-danger small">{{ form.quantity.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.deadline.id_for_label }}" class="form-label">
+                                        <i class="bi bi-calendar-event me-1"></i>Deadline
+                                    </label>
+                                    {{ form.deadline }}
+                                    {% if form.deadline.errors %}
+                                        <div class="text-danger small">{{ form.deadline.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                        <i class="bi bi-chat-text me-1"></i>Notes
+                                    </label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="text-danger small">{{ form.notes.errors.0 }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -101,8 +154,9 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <!-- Row 1: Paper Type -->
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <div class="mb-3">
                                     <label for="{{ form.paper_type.id_for_label }}" class="form-label">Paper Type *</label>
                                     {{ form.paper_type }}
@@ -111,17 +165,37 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                        </div>
+
+                        <!-- Row 2: End Size -->
+                        <div class="row">
+                            <div class="col-12">
                                 <div class="mb-3">
-                                    <label for="{{ form.end_size.id_for_label }}" class="form-label">End Size *</label>
-                                    {{ form.end_size }}
-                                    {% if form.end_size.errors %}
-                                        <div class="text-danger small">{{ form.end_size.errors.0 }}</div>
+                                    <label class="form-label">End Size *</label>
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            <label for="{{ form.end_size.id_for_label }}" class="form-label small">Standard Dropdown</label>
+                                            {{ form.end_size }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="{{ form.custom_end_height.id_for_label }}" class="form-label small">Custom Height (cm)</label>
+                                            {{ form.custom_end_height }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="{{ form.custom_end_width.id_for_label }}" class="form-label small">Custom Width (cm)</label>
+                                            {{ form.custom_end_width }}
+                                        </div>
+                                    </div>
+                                    {% if form.end_size.errors or form.custom_end_width.errors or form.custom_end_height.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.end_size.errors.0|default:form.custom_end_width.errors.0|default:form.custom_end_height.errors.0 }}
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
                         
+                        <!-- Row 3: Printing Size | Parts of Parent | Parent Size -->
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
@@ -134,22 +208,19 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.selling_size.id_for_label }}" class="form-label">Selling Size *</label>
-                                    {{ form.selling_size }}
-                                    {% if form.selling_size.errors %}
-                                        <div class="text-danger small">{{ form.selling_size.errors.0 }}</div>
+                                    <label for="{{ form.parts_of_selling_size.id_for_label }}" class="form-label">Parts of Parent *</label>
+                                    {{ form.parts_of_selling_size }}
+                                    {% if form.parts_of_selling_size.errors %}
+                                        <div class="text-danger small">{{ form.parts_of_selling_size.errors.0 }}</div>
                                     {% endif %}
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.parts_of_selling_size.id_for_label }}" class="form-label">
-                                        Parts of Selling Size *
-                                    </label>
-                                    {{ form.parts_of_selling_size }}
-                                    <div class="form-text">{{ form.parts_of_selling_size.help_text }}</div>
-                                    {% if form.parts_of_selling_size.errors %}
-                                        <div class="text-danger small">{{ form.parts_of_selling_size.errors.0 }}</div>
+                                    <label for="{{ form.selling_size.id_for_label }}" class="form-label">Parent Size *</label>
+                                    {{ form.selling_size }}
+                                    {% if form.selling_size.errors %}
+                                        <div class="text-danger small">{{ form.selling_size.errors.0 }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -241,21 +312,89 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
-                            {{ form.notes }}
-                            {% if form.notes.errors %}
-                                <div class="text-danger small">{{ form.notes.errors.0 }}</div>
+                        <!-- Notes moved to Job Information section -->
+                    </div>
+                </div>
+                
+                <!-- Template Settings -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-files me-2"></i>
+                            Template Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check mb-3">
+                                    {{ form.is_template }}
+                                    <label class="form-check-label" for="{{ form.is_template.id_for_label }}">
+                                        <i class="bi bi-bookmark me-1"></i>Save as Template
+                                    </label>
+                                    {% if form.is_template.errors %}
+                                        <div class="text-danger small">{{ form.is_template.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.template_name.id_for_label }}" class="form-label">Template Name</label>
+                                    {{ form.template_name }}
+                                    <div class="form-text">Required only when saving as template</div>
+                                    {% if form.template_name.errors %}
+                                        <div class="text-danger small">{{ form.template_name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Operations -->
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear me-2"></i>
+                            Operations Sequence
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addOperationModal">
+                            <i class="bi bi-plus-lg me-1"></i>Add Operation
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="operationsList" class="mb-3">
+                            {% if object.job_operations.all %}
+                                {% for job_operation in object.job_operations.all %}
+                                    <div class="operation-item border rounded p-3 mb-2" data-operation-id="{{ job_operation.id }}" data-sequence="{{ job_operation.sequence_order }}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center">
+                                                <div class="drag-handle me-3" style="cursor: move;">
+                                                    <i class="bi bi-grip-vertical text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    <span class="badge bg-secondary me-2">{{ job_operation.sequence_order }}</span>
+                                                    <strong>{{ job_operation.operation.name }}</strong>
+                                                    <br><small class="text-muted">{{ job_operation.operation.category.name }}</small>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-operation" data-operation-id="{{ job_operation.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center text-muted py-4" id="noOperationsMessage">
+                                    <i class="bi bi-gear me-2"></i>
+                                    No operations added yet. Click "Add Operation" to get started.
+                                </div>
                             {% endif %}
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="{{ form.variant_quantities.id_for_label }}" class="form-label">Variant Quantities</label>
-                            {{ form.variant_quantities }}
-                            <div class="form-text">{{ form.variant_quantities.help_text }}</div>
-                            {% if form.variant_quantities.errors %}
-                                <div class="text-danger small">{{ form.variant_quantities.errors.0 }}</div>
-                            {% endif %}
+                        <div class="alert alert-info small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>Tip:</strong> Drag operations to reorder them. The sequence determines the order of execution during calculation.
                         </div>
                     </div>
                 </div>
@@ -278,16 +417,23 @@
                             </button>
                             
                             {% if object %}
-                            <a href="{% url 'jobs:calculate' object.pk %}" class="btn btn-success">
+                            <button type="submit" name="calculate" class="btn btn-success" formnovalidate>
                                 <i class="bi bi-calculator me-2"></i>
                                 Calculate Costs
-                            </a>
+                            </button>
                             {% endif %}
                             
+                            {% if object %}
+                            <a href="{% url 'jobs:detail' object.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Back to Job
+                            </a>
+                            {% else %}
                             <a href="{% url 'jobs:list' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-2"></i>
                                 Back to Jobs
                             </a>
+                            {% endif %}
                         </div>
                         
                         {% if object %}
@@ -324,6 +470,161 @@
     </form>
 </div>
 
+<!-- Add Operation Modal -->
+<div class="modal fade" id="addOperationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Operation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Operation Selection -->
+                <div id="operationSelection">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">Select Operation</h6>
+                        <button type="button" class="btn btn-sm btn-success" id="createNewOperationBtn">
+                            <i class="bi bi-plus me-1"></i>Create New Operation
+                        </button>
+                    </div>
+                    <div class="row">
+                        {% regroup operations by category as category_operations %}
+                        {% for category in category_operations %}
+                            <div class="col-md-6 mb-4">
+                                <h6 class="border-bottom pb-2">
+                                    <span class="badge rounded-pill" style="background-color: {{ category.grouper.color }}">
+                                        {{ category.grouper.name }}
+                                    </span>
+                                </h6>
+                                {% for operation in category.list %}
+                                    <div class="operation-option p-2 border rounded mb-2" style="cursor: pointer;" 
+                                         data-operation-id="{{ operation.id }}"
+                                         data-operation-name="{{ operation.name }}">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>{{ operation.name }}</strong>
+                                                {% if operation.description %}
+                                                    <br><small class="text-muted">{{ operation.description|truncatewords:10 }}</small>
+                                                {% endif %}
+                                            </div>
+                                            <small class="text-muted">${{ operation.makeready_price }}</small>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Operation Parameters (shown when operation selected) -->
+                <div id="operationParameters" style="display: none;">
+                    <div class="border-top pt-3 mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Operation Parameters</h6>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="backToOperationsBtn">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Operations
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-info small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Selected operation: <strong id="selectedOperationName"></strong>
+                        </div>
+                        
+                        <!-- Dynamic parameter inputs will be added here -->
+                        <div id="parameterInputs"></div>
+                        
+                        <div class="d-grid mt-3">
+                            <button type="button" class="btn btn-primary" id="addOperationBtn">
+                                <i class="bi bi-plus me-1"></i>Add Operation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Create New Operation Form (shown when "Create New Operation" clicked) -->
+                <div id="createOperationForm" style="display: none;">
+                    <div class="border-top pt-3 mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Create New Operation</h6>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="backToSelectionBtn">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Selection
+                            </button>
+                        </div>
+                        
+                        <form id="newOperationForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Operation Name *</label>
+                                    <input type="text" class="form-control" id="newOpName" required 
+                                           placeholder="e.g., Cut in 4 pieces">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Category *</label>
+                                    <select class="form-select" id="newOpCategory" required>
+                                        <option value="">Select category...</option>
+                                        {% for category in category_operations %}
+                                            <option value="{{ category.grouper.id }}">{{ category.grouper.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" id="newOpDescription" rows="2" 
+                                          placeholder="Optional description of the operation"></textarea>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Makeready Price (€) *</label>
+                                    <input type="number" class="form-control" id="newOpMakereadyPrice" 
+                                           step="0.01" min="0" value="0" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Price per Sheet (€) *</label>
+                                    <input type="number" class="form-control" id="newOpPricePerSheet" 
+                                           step="0.0001" min="0" value="0" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Plate Price (€)</label>
+                                    <input type="number" class="form-control" id="newOpPlatePrice" 
+                                           step="0.01" min="0" value="0">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="newOpUsesColors">
+                                        <label class="form-check-label">Uses Colors</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="newOpIsActive" checked>
+                                        <label class="form-check-label">Active</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-primary" id="saveNewOperationBtn">
+                                    <i class="bi bi-check me-1"></i>Create & Use Operation
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Show/hide book-specific fields
@@ -340,6 +641,602 @@ document.addEventListener('DOMContentLoaded', function() {
     
     orderTypeField.addEventListener('change', toggleBookFields);
     toggleBookFields(); // Initialize on page load
+    
+    // Show/hide template name field
+    const isTemplateField = document.querySelector('#{{ form.is_template.id_for_label }}');
+    const templateNameField = document.querySelector('#{{ form.template_name.id_for_label }}');
+    
+    function toggleTemplateNameField() {
+        if (isTemplateField.checked) {
+            templateNameField.closest('.mb-3').style.display = 'block';
+            templateNameField.required = true;
+        } else {
+            templateNameField.closest('.mb-3').style.display = 'none';
+            templateNameField.required = false;
+            templateNameField.value = '';
+        }
+    }
+    
+    isTemplateField.addEventListener('change', toggleTemplateNameField);
+    toggleTemplateNameField(); // Initialize on page load
+    
+    // Operations management
+    const operationsList = document.getElementById('operationsList');
+    const noOperationsMessage = document.getElementById('noOperationsMessage');
+    const jobId = {% if object %}{{ object.id }}{% else %}null{% endif %};
+    
+    // Global variables for operation selection
+    let selectedOperationId = null;
+    let selectedOperationName = null;
+
+    // Add operation functionality
+    document.querySelectorAll('.operation-option').forEach(option => {
+        option.addEventListener('click', function() {
+            selectedOperationId = this.dataset.operationId;
+            selectedOperationName = this.dataset.operationName;
+            
+            // Check if this operation needs parameters
+            if (needsParameters(selectedOperationName)) {
+                showOperationParameters();
+            } else {
+                // Add operation directly without parameters
+                if (jobId) {
+                    addOperationToJob(selectedOperationId);
+                } else {
+                    addOperationToNewJob(selectedOperationId, this);
+                }
+            }
+        });
+    });
+    
+    // Remove operation functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-operation')) {
+            const operationId = e.target.closest('.remove-operation').dataset.operationId;
+            if (jobId) {
+                removeOperationFromJob(operationId);
+            } else {
+                // For new jobs, remove from DOM
+                e.target.closest('.operation-item').remove();
+                checkOperationsEmpty();
+                updateSelectedOperations();
+            }
+        }
+    });
+    
+    // Drag and drop functionality
+    let draggedElement = null;
+    let isDragging = false;
+    
+    function makeSortable() {
+        const items = operationsList.querySelectorAll('.operation-item');
+        
+        items.forEach(item => {
+            const handle = item.querySelector('.drag-handle');
+            if (handle) {
+                handle.addEventListener('mousedown', startDrag);
+            }
+        });
+    }
+    
+    function startDrag(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        draggedElement = e.target.closest('.operation-item');
+        if (!draggedElement) return;
+        
+        isDragging = true;
+        draggedElement.classList.add('dragging');
+        draggedElement.style.opacity = '0.5';
+        
+        document.addEventListener('mousemove', handleDrag);
+        document.addEventListener('mouseup', endDrag);
+        
+        // Prevent text selection
+        document.body.style.userSelect = 'none';
+    }
+    
+    function handleDrag(e) {
+        if (!isDragging || !draggedElement) return;
+        
+        e.preventDefault();
+        
+        const afterElement = getDragAfterElement(operationsList, e.clientY);
+        if (afterElement == null) {
+            operationsList.appendChild(draggedElement);
+        } else {
+            operationsList.insertBefore(draggedElement, afterElement);
+        }
+        
+        updateSequenceNumbers();
+    }
+    
+    function endDrag(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        
+        if (draggedElement) {
+            draggedElement.classList.remove('dragging');
+            draggedElement.style.opacity = '';
+            
+            updateSequenceNumbers();
+            if (jobId) {
+                saveOperationOrder();
+            }
+            
+            draggedElement = null;
+        }
+        
+        document.removeEventListener('mousemove', handleDrag);
+        document.removeEventListener('mouseup', endDrag);
+        
+        // Restore text selection
+        document.body.style.userSelect = '';
+    }
+    
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.operation-item:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+    
+    function updateSequenceNumbers() {
+        const items = operationsList.querySelectorAll('.operation-item');
+        items.forEach((item, index) => {
+            const badge = item.querySelector('.badge');
+            badge.textContent = index + 1;
+            item.dataset.sequence = index + 1;
+        });
+    }
+    
+    function addOperationToJob(operationId) {
+        fetch(`{% url 'jobs:add_operation' 0 %}`.replace('0', jobId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `operation_id=${operationId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Simple reload for now
+            } else {
+                alert('Error adding operation: ' + data.error);
+            }
+        });
+    }
+    
+    function removeOperationFromJob(operationId) {
+        if (confirm('Are you sure you want to remove this operation?')) {
+            fetch(`{% url 'jobs:remove_operation' 0 0 %}`.replace(/0/g, function(match, offset) {
+                return offset === 0 ? jobId : operationId;
+            }), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Simple reload for now
+                } else {
+                    alert('Error removing operation: ' + data.error);
+                }
+            });
+        }
+    }
+    
+    function saveOperationOrder() {
+        const operationIds = [...operationsList.querySelectorAll('.operation-item')]
+            .map(item => item.dataset.operationId);
+        
+        fetch(`{% url 'jobs:reorder_operations' 0 %}`.replace('0', jobId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ operation_ids: operationIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Error saving operation order: ' + data.error);
+                location.reload();
+            }
+        });
+    }
+    
+    function addOperationToNewJob(operationId, element) {
+        // Clone the operation option to add to the list
+        const operationName = element.querySelector('strong').textContent;
+        const sequence = operationsList.querySelectorAll('.operation-item').length + 1;
+        
+        const operationHtml = `
+            <div class="operation-item border rounded p-3 mb-2" data-operation-id="${operationId}" data-sequence="${sequence}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="drag-handle me-3" style="cursor: move;">
+                            <i class="bi bi-grip-vertical text-muted"></i>
+                        </div>
+                        <div>
+                            <span class="badge bg-secondary me-2">${sequence}</span>
+                            <strong>${operationName}</strong>
+                            <br><small class="text-muted">Will be added when job is saved</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-operation" data-operation-id="${operationId}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        operationsList.insertAdjacentHTML('beforeend', operationHtml);
+        noOperationsMessage.style.display = 'none';
+        makeSortable();
+        
+        // Update hidden field with selected operations
+        updateSelectedOperations();
+        
+        // Close modal
+        bootstrap.Modal.getInstance(document.getElementById('addOperationModal')).hide();
+    }
+    
+    function checkOperationsEmpty() {
+        if (operationsList.querySelectorAll('.operation-item').length === 0) {
+            noOperationsMessage.style.display = 'block';
+        }
+    }
+    
+    function updateSelectedOperations() {
+        if (!jobId) { // Only for new jobs
+            const operations = [];
+            const operationItems = operationsList.querySelectorAll('.operation-item');
+            operationItems.forEach((item, index) => {
+                const operationData = {
+                    operation_id: item.dataset.operationId,
+                    sequence_order: index + 1
+                };
+                
+                // Include parameters if they exist
+                if (item.dataset.parameters) {
+                    try {
+                        operationData.parameters = JSON.parse(item.dataset.parameters);
+                    } catch (e) {
+                        console.warn('Failed to parse operation parameters:', e);
+                    }
+                }
+                
+                operations.push(operationData);
+            });
+            document.getElementById('selectedOperations').value = JSON.stringify(operations);
+        }
+    }
+    
+    // Handle form submission to ensure operations are included
+    document.getElementById('jobForm').addEventListener('submit', function(e) {
+        if (!jobId) { // Only for new jobs
+            updateSelectedOperations();
+        }
+    });
+    
+    // Add event listeners for parameter modal buttons
+    document.getElementById('backToOperationsBtn')?.addEventListener('click', showOperationSelection);
+    document.getElementById('addOperationBtn')?.addEventListener('click', addOperationWithParameters);
+    
+    // Add event listeners for operation creation
+    document.getElementById('createNewOperationBtn')?.addEventListener('click', showCreateOperationForm);
+    document.getElementById('backToSelectionBtn')?.addEventListener('click', showOperationSelection);
+    document.getElementById('saveNewOperationBtn')?.addEventListener('click', createNewOperation);
+    
+    // Operation parameter functions
+    function needsParameters(operationName) {
+        // Define which operations need parameters
+        const parametricOperations = [
+            'Cut in N pieces',
+            'Cut in N-piece', 
+            'Cut to pieces',
+            'Fold in N',
+            'Divide by N'
+        ];
+        return parametricOperations.some(name => operationName.toLowerCase().includes(name.toLowerCase()));
+    }
+    
+    function showOperationParameters() {
+        console.log('showOperationParameters called for:', selectedOperationName);
+        document.getElementById('operationSelection').style.display = 'none';
+        document.getElementById('operationParameters').style.display = 'block';
+        document.getElementById('selectedOperationName').textContent = selectedOperationName;
+        
+        // Generate parameter inputs based on operation type
+        generateParameterInputs();
+    }
+    
+    function showOperationSelection() {
+        console.log('showOperationSelection called');
+        document.getElementById('operationSelection').style.display = 'block';
+        document.getElementById('operationParameters').style.display = 'none';
+        document.getElementById('createOperationForm').style.display = 'none';
+        selectedOperationId = null;
+        selectedOperationName = null;
+    }
+    
+    function showCreateOperationForm() {
+        console.log('showCreateOperationForm called');
+        document.getElementById('operationSelection').style.display = 'none';
+        document.getElementById('operationParameters').style.display = 'none';
+        document.getElementById('createOperationForm').style.display = 'block';
+        // Clear form
+        document.getElementById('newOperationForm').reset();
+        document.getElementById('saveNewOperationBtn').disabled = false;
+    }
+    
+    function generateParameterInputs() {
+        const container = document.getElementById('parameterInputs');
+        container.innerHTML = '';
+        
+        if (selectedOperationName.toLowerCase().includes('cut')) {
+            container.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Number of pieces to cut into:</label>
+                    <input type="number" class="form-control" id="cutPieces" min="2" max="100" value="2" required>
+                    <div class="form-text">How many pieces will each sheet be cut into?</div>
+                </div>
+            `;
+        } else if (selectedOperationName.toLowerCase().includes('fold')) {
+            container.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Number of folds:</label>
+                    <input type="number" class="form-control" id="foldCount" min="1" max="10" value="1" required>
+                    <div class="form-text">How many times will the sheet be folded?</div>
+                </div>
+            `;
+        } else if (selectedOperationName.toLowerCase().includes('divide')) {
+            container.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Divide by:</label>
+                    <input type="number" class="form-control" id="divideBy" min="2" max="100" value="2" required>
+                    <div class="form-text">Divide the quantity by this number</div>
+                </div>
+            `;
+        }
+    }
+    
+    function addOperationWithParameters() {
+        console.log('addOperationWithParameters called');
+        const parameters = {};
+        
+        // Collect parameters based on operation type
+        if (selectedOperationName.toLowerCase().includes('cut')) {
+            const cutPieces = document.getElementById('cutPieces')?.value;
+            console.log('Cut pieces value:', cutPieces);
+            if (cutPieces) {
+                parameters.cut_pieces = parseInt(cutPieces);
+            }
+        } else if (selectedOperationName.toLowerCase().includes('fold')) {
+            const foldCount = document.getElementById('foldCount')?.value;
+            if (foldCount) {
+                parameters.fold_count = parseInt(foldCount);
+            }
+        } else if (selectedOperationName.toLowerCase().includes('divide')) {
+            const divideBy = document.getElementById('divideBy')?.value;
+            if (divideBy) {
+                parameters.divide_by = parseInt(divideBy);
+            }
+        }
+        
+        console.log('Parameters collected:', parameters);
+        
+        // Add operation with parameters
+        if (jobId) {
+            addOperationToJobWithParams(selectedOperationId, parameters);
+        } else {
+            addOperationToNewJobWithParams(selectedOperationId, parameters);
+        }
+        
+        // Close modal and reset
+        bootstrap.Modal.getInstance(document.getElementById('addOperationModal')).hide();
+        showOperationSelection();
+    }
+    
+    // Modified functions to handle parameters
+    function addOperationToNewJobWithParams(operationId, parameters = {}) {
+        const sequence = operationsList.querySelectorAll('.operation-item').length + 1;
+        const paramText = Object.keys(parameters).length > 0 ? 
+            ` (${Object.entries(parameters).map(([k,v]) => `${k}: ${v}`).join(', ')})` : '';
+        
+        const operationHtml = `
+            <div class="operation-item border rounded p-3 mb-2" data-operation-id="${operationId}" data-sequence="${sequence}" data-parameters='${JSON.stringify(parameters)}'>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="drag-handle me-3" style="cursor: move;">
+                            <i class="bi bi-grip-vertical text-muted"></i>
+                        </div>
+                        <div>
+                            <span class="badge bg-secondary me-2">${sequence}</span>
+                            <strong>${selectedOperationName}${paramText}</strong>
+                            <br><small class="text-muted">Will be added when job is saved</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-operation" data-operation-id="${operationId}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        operationsList.insertAdjacentHTML('beforeend', operationHtml);
+        noOperationsMessage.style.display = 'none';
+        makeSortable();
+        updateSelectedOperations();
+    }
+    
+    function addOperationToJobWithParams(operationId, parameters = {}) {
+        // For existing jobs, make AJAX call with parameters
+        // This would need to be implemented in the backend
+        console.log('Adding operation to existing job with params:', operationId, parameters);
+        // For now, fall back to the original method
+        addOperationToJob(operationId);
+    }
+    
+    function createNewOperation() {
+        console.log('createNewOperation called');
+        
+        // Collect form data
+        const formData = {
+            name: document.getElementById('newOpName').value,
+            category: document.getElementById('newOpCategory').value,
+            description: document.getElementById('newOpDescription').value,
+            makeready_price: document.getElementById('newOpMakereadyPrice').value,
+            price_per_sheet: document.getElementById('newOpPricePerSheet').value,
+            plate_price: document.getElementById('newOpPlatePrice').value,
+            uses_colors: document.getElementById('newOpUsesColors').checked,
+            is_active: document.getElementById('newOpIsActive').checked
+        };
+        
+        // Validate required fields
+        if (!formData.name || !formData.category || !formData.makeready_price || !formData.price_per_sheet) {
+            alert('Please fill in all required fields (marked with *)');
+            return;
+        }
+        
+        // Create CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Show loading state
+        const saveBtn = document.getElementById('saveNewOperationBtn');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Creating...';
+        saveBtn.disabled = true;
+        
+        // Make AJAX request to create operation
+        fetch('/operations/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Operation created successfully
+                selectedOperationId = data.operation_id;
+                selectedOperationName = data.operation_name;
+                
+                // Check if this operation needs parameters
+                if (needsParameters(selectedOperationName)) {
+                    showOperationParameters();
+                } else {
+                    // Add operation directly
+                    if (jobId) {
+                        addOperationToJob(selectedOperationId);
+                    } else {
+                        // Create a mock element for addOperationToNewJob
+                        const mockElement = {
+                            querySelector: (selector) => {
+                                if (selector === 'strong') {
+                                    return { textContent: selectedOperationName };
+                                }
+                                return null;
+                            }
+                        };
+                        addOperationToNewJob(selectedOperationId, mockElement);
+                    }
+                    
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('addOperationModal')).hide();
+                    showOperationSelection();
+                }
+            } else {
+                alert('Error creating operation: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error creating operation. Please try again.');
+        })
+        .finally(() => {
+            // Restore button state
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        });
+    }
+
+    // Initialize sortable
+    makeSortable();
+    
+    // Auto-populate selling size fields based on printing size selection
+    function updateSellingFields() {
+        const printingSizeSelect = document.querySelector('select[name="printing_size"]');
+        const sellingSizeSelect = document.querySelector('select[name="selling_size"]');
+        const partsOfSellingInput = document.querySelector('input[name="parts_of_selling_size"]');
+        
+        if (!printingSizeSelect || !sellingSizeSelect || !partsOfSellingInput) {
+            return;
+        }
+        
+        const selectedPrintingSize = printingSizeSelect.value;
+        
+        if (selectedPrintingSize) {
+            // Make AJAX call to get parent size info
+            fetch(`/operations/paper-sizes/${selectedPrintingSize}/parent-info/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.parent_size_id) {
+                        // Auto-select parent size
+                        sellingSizeSelect.value = data.parent_size_id;
+                        partsOfSellingInput.value = data.parts_of_parent;
+                        
+                        // Add visual feedback
+                        sellingSizeSelect.style.backgroundColor = '#e7f3ff';
+                        partsOfSellingInput.style.backgroundColor = '#e7f3ff';
+                        
+                        // Remove highlight after 2 seconds
+                        setTimeout(() => {
+                            sellingSizeSelect.style.backgroundColor = '';
+                            partsOfSellingInput.style.backgroundColor = '';
+                        }, 2000);
+                        
+                        // Trigger change events
+                        sellingSizeSelect.dispatchEvent(new Event('change'));
+                        partsOfSellingInput.dispatchEvent(new Event('change'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching parent size info:', error);
+                });
+        }
+    }
+    
+    // Add event listener to printing size select
+    const printingSizeSelect = document.querySelector('select[name="printing_size"]');
+    if (printingSizeSelect) {
+        printingSizeSelect.addEventListener('change', updateSellingFields);
+    }
+
+    // Make functions global for onclick handlers
+    window.showOperationSelection = showOperationSelection;
+    window.showOperationParameters = showOperationParameters;
+    window.addOperationWithParameters = addOperationWithParameters;
+    window.showCreateOperationForm = showCreateOperationForm;
+    window.createNewOperation = createNewOperation;
 });
 </script>
 {% endblock %}

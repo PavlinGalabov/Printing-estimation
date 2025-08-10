@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}PDF Export History - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-clock-history me-2"></i>PDF Export History</h2>
+                <a href="{% url 'jobs:pdf_export_list' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Export New PDF
+                </a>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="job" class="form-label">Job</label>
+                            <select name="job" id="job" class="form-select">
+                                <option value="">All Jobs</option>
+                                {% for job in jobs %}
+                                    <option value="{{ job.pk }}" {% if job.pk|stringformat:"s" == current_job %}selected{% endif %}>
+                                        {{ job.order_name }} ({{ job.job_number|default:"Draft" }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="type" class="form-label">Export Type</label>
+                            <select name="type" id="type" class="form-select">
+                                <option value="">All Types</option>
+                                {% for type_code, type_name in export_types %}
+                                    <option value="{{ type_code }}" {% if type_code == current_type %}selected{% endif %}>
+                                        {{ type_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-search me-1"></i>Filter
+                                </button>
+                                <a href="{% url 'jobs:pdf_export_history' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Export History -->
+            {% if exports %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Export History ({{ exports|length }} exports)</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Job</th>
+                                        <th>Export Type</th>
+                                        <th>File Name</th>
+                                        <th>Size</th>
+                                        <th>Created By</th>
+                                        <th>Created At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for export in exports %}
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ export.job.order_name|truncatechars:25 }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {{ export.job.job_number|default:"Draft" }} - {{ export.job.client.company_name|truncatechars:20 }}
+                                                    </small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ export.get_export_type_display }}</span>
+                                            </td>
+                                            <td>
+                                                <code class="small">{{ export.file_name|truncatechars:30 }}</code>
+                                            </td>
+                                            <td>
+                                                {% if export.file_size_mb > 0 %}
+                                                    {{ export.file_size_mb }} MB
+                                                {% else %}
+                                                    <small class="text-muted">Unknown</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if export.created_by %}
+                                                    {{ export.created_by.get_display_name }}
+                                                {% else %}
+                                                    <small class="text-muted">System</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    {{ export.created_at|date:"Y-m-d H:i" }}
+                                                    <br>
+                                                    <small class="text-muted">{{ export.created_at|timesince }} ago</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'jobs:pdf_download' export.pk %}" class="btn btn-sm btn-outline-primary" title="Download">
+                                                        <i class="bi bi-download"></i>
+                                                    </a>
+                                                    <a href="{% url 'jobs:detail' export.job.pk %}" class="btn btn-sm btn-outline-secondary" title="View Job">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    {% if user.is_superuser or export.created_by == user %}
+                                                        <a href="{% url 'jobs:pdf_delete' export.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                            <i class="bi bi-trash"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {% if is_paginated %}
+                    <nav aria-label="Export history pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.job %}&job={{ request.GET.job }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">&laquo; First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.job %}&job={{ request.GET.job }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.job %}&job={{ request.GET.job }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.job %}&job={{ request.GET.job }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Last &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No PDF exports found. <a href="{% url 'jobs:pdf_export_list' %}">Create your first export</a>.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

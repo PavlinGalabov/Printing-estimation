@@ -22,3 +22,6 @@ django-ratelimit>=4.1.0
 
 # API (for future use)
 djangorestframework>=3.14.0
+
+# HTML-to-PDF export functionality (using browser print)
+# Note: This project uses HTML templates that can be printed as PDF using browser functionality

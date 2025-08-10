@@ -8,7 +8,7 @@
         <div class="col-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'jobs:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'accounts:client_list' %}">Clients</a></li>
                     <li class="breadcrumb-item active">{{ client.company_name }}</li>
                 </ol>
@@ -27,38 +27,38 @@
                     </div>
                 </div>
                 
-                <div class="btn-group">
-                    <a href="{% url 'accounts:client_edit' client.pk %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-pencil me-1"></i>Edit
-                    </a>
-                    <a href="{% url 'jobs:create' %}?client={{ client.pk }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i>New Job
-                    </a>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="bi bi-three-dots"></i>
-                        </button>
-                        <ul class="dropdown-menu">
-                            {% if client.phone %}
-                            <li><a class="dropdown-item" href="tel:{{ client.phone }}">
-                                <i class="bi bi-telephone me-2"></i>Call {{ client.phone }}
-                            </a></li>
-                            {% endif %}
-                            <li><a class="dropdown-item" href="mailto:{{ client.email }}">
-                                <i class="bi bi-envelope me-2"></i>Send Email
-                            </a></li>
-                            {% if client.website %}
-                            <li><a class="dropdown-item" href="{{ client.website }}" target="_blank">
-                                <i class="bi bi-globe me-2"></i>Visit Website
-                            </a></li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="{% url 'accounts:client_delete' client.pk %}">
-                                <i class="bi bi-trash me-2"></i>Delete Client
-                            </a></li>
-                        </ul>
-                    </div>
-                </div>
+{#                <div class="btn-group">#}
+{#                    <a href="{% url 'accounts:client_edit' client.pk %}" class="btn btn-outline-secondary">#}
+{#                        <i class="bi bi-pencil me-1"></i>Edit#}
+{#                    </a>#}
+{#                    <a href="{% url 'jobs:create' %}?client={{ client.pk }}" class="btn btn-primary">#}
+{#                        <i class="bi bi-plus-circle me-1"></i>New Job#}
+{#                    </a>#}
+{#                    <div class="btn-group" role="group">#}
+{#                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">#}
+{#                            <i class="bi bi-three-dots"></i>#}
+{#                        </button>#}
+{#                        <ul class="dropdown-menu">#}
+{#                            {% if client.phone %}#}
+{#                            <li><a class="dropdown-item" href="tel:{{ client.phone }}">#}
+{#                                <i class="bi bi-telephone me-2"></i>Call {{ client.phone }}#}
+{#                            </a></li>#}
+{#                            {% endif %}#}
+{#                            <li><a class="dropdown-item" href="mailto:{{ client.email }}">#}
+{#                                <i class="bi bi-envelope me-2"></i>Send Email#}
+{#                            </a></li>#}
+{#                            {% if client.website %}#}
+{#                            <li><a class="dropdown-item" href="{{ client.website }}" target="_blank">#}
+{#                                <i class="bi bi-globe me-2"></i>Visit Website#}
+{#                            </a></li>#}
+{#                            {% endif %}#}
+{#                            <li><hr class="dropdown-divider"></li>#}
+{#                            <li><a class="dropdown-item text-danger" href="{% url 'accounts:client_delete' client.pk %}">#}
+{#                                <i class="bi bi-trash me-2"></i>Delete Client#}
+{#                            </a></li>#}
+{#                        </ul>#}
+{#                    </div>#}
+{#                </div>#}
             </div>
         </div>
     </div>
@@ -167,9 +167,7 @@
                         <i class="bi bi-file-earmark-text me-2"></i>
                         Recent Jobs
                     </h5>
-                    <a href="{% url 'jobs:create' %}?client={{ client.pk }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus me-1"></i>New Job
-                    </a>
+
                 </div>
                 <div class="card-body p-0">
                     {% if recent_jobs %}
@@ -333,7 +331,8 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{% url 'jobs:create' %}?client={{ client.pk }}" class="btn btn-primary">
+
+
                             <i class="bi bi-plus-circle me-2"></i>
                             Create New Job
                         </a>

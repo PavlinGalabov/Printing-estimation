@@ -1,0 +1,606 @@
+{% load job_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimate - {{ job.order_name }}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { 
+                margin: 0; 
+                font-size: 11px; 
+                line-height: 1.4;
+                color: #000 !important;
+                background: white !important;
+            }
+            .page-break { page-break-before: always; }
+            .card { 
+                break-inside: avoid;
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+                background: white !important;
+            }
+            .card-header {
+                background: #f8f9fa !important;
+                border-bottom: 1px solid #ccc !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .header-section {
+                background: #f8f9fa !important;
+                color: #333 !important;
+                border: 2px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .bg-primary {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .bg-info {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #666 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .bg-success {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #666 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .bg-warning {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #666 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .bg-danger {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .bg-secondary {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .bg-dark {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .text-primary { color: #333 !important; }
+            .text-success { color: #333 !important; }
+            .text-danger { color: #333 !important; }
+            .text-warning { color: #333 !important; }
+            .text-muted { color: #666 !important; }
+            .badge {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .rounded {
+                border-radius: 0.25rem !important;
+                border: 1px solid #333 !important;
+                background-color: #f8f9fa !important;
+            }
+            .operations-table th {
+                background-color: #f8f9fa !important;
+                border: 1px solid #333 !important;
+                color: #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .print-container {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 8px !important;
+            }
+            .header-section {
+                padding: 1rem !important;
+                margin-bottom: 1rem !important;
+            }
+            .header-section h1 {
+                font-size: 1.8rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+            .header-section .subtitle {
+                font-size: 0.9rem !important;
+            }
+            .card {
+                margin-bottom: 1rem !important;
+            }
+            .card-body {
+                padding: 0.75rem !important;
+            }
+            .card-header {
+                padding: 0.5rem 0.75rem !important;
+            }
+            .card-header h5 {
+                font-size: 1rem !important;
+                margin: 0 !important;
+            }
+            .info-table td {
+                padding: 0.25rem 0 !important;
+                font-size: 10px !important;
+            }
+            .col-md-6, .col-md-4 {
+                flex: 0 0 50% !important;
+                max-width: 50% !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            .col-md-4 {
+                flex: 0 0 33.333333% !important;
+                max-width: 33.333333% !important;
+            }
+            .row {
+                margin-left: -0.5rem !important;
+                margin-right: -0.5rem !important;
+            }
+            .p-3 {
+                padding: 0.5rem !important;
+            }
+            .p-3 h4 {
+                font-size: 1.1rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+            .p-3 small {
+                font-size: 8px !important;
+            }
+            .operations-table th,
+            .operations-table td {
+                padding: 0.25rem !important;
+                font-size: 9px !important;
+            }
+            .sequence-badge {
+                width: 20px !important;
+                height: 20px !important;
+                font-size: 8px !important;
+            }
+            .mb-3 {
+                margin-bottom: 0.75rem !important;
+            }
+            .me-4 span {
+                font-size: 9px !important;
+            }
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        .print-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .header-section {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #333;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-section .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        
+        .info-table td {
+            padding: 0.5rem 0;
+            border: none;
+        }
+        
+        .info-table td:first-child {
+            font-weight: 600;
+            color: #495057;
+            width: 40%;
+        }
+        
+        .operations-table {
+            margin-bottom: 0;
+        }
+        
+        .operations-table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .operations-table td {
+            vertical-align: middle;
+        }
+        
+        .sequence-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            background-color: #333;
+            color: white;
+        }
+        
+        .footer-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .nav-buttons {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-buttons .btn {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons no-print">
+        <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Job
+        </a>
+        <a href="{% url 'jobs:list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list me-2"></i>All Jobs
+        </a>
+    </div>
+    
+    <!-- Print Button -->
+    <button class="btn btn-primary print-button no-print" onclick="window.print()">
+        <i class="bi bi-printer me-2"></i>Print/Save as PDF
+    </button>
+    
+    <div class="print-container">
+        <!-- Header -->
+        <div class="header-section">
+            <h1><i class="bi bi-file-earmark-text me-3"></i>ESTIMATE</h1>
+            <div class="subtitle">Professional Printing Cost Estimation</div>
+        </div>
+
+        <!-- Job Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Job Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless info-table">
+                            <tr>
+                                <td><strong>Job Number:</strong></td>
+                                <td>{{ job.job_number|default:"Draft" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Order Name:</strong></td>
+                                <td>{{ job.order_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Client:</strong></td>
+                                <td>
+                                    {{ job.client.company_name }}
+                                    {% if job.client.contact_person %}
+                                    <br><small>{{ job.client.contact_person }}</small>
+                                    {% endif %}
+                                    {% if job.client.phone %}
+                                    <br><small>
+                                        <i class="bi bi-telephone me-1"></i>{{ job.client.phone }}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if job.deadline %}
+                            <tr>
+                                <td><strong>Deadline:</strong></td>
+                                <td>
+                                    {{ job.deadline|date:"M d, Y H:i" }}
+                                    {% if job.deadline < now %}
+                                        <span class="badge bg-danger ms-2">Overdue</span>
+                                    {% elif job.deadline|timeuntil < "1 day" %}
+                                        <span class="badge bg-warning text-dark ms-2">Due Soon</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Order Type:</strong></td>
+                                <td><span class="badge bg-secondary">{{ job.get_order_type_display }}</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Paper:</strong></td>
+                                <td>
+                                    {% if job.paper_type.weight_gsm %}{{ job.paper_type.weight_gsm }}g {% endif %}{{ job.paper_type.name }}{% if job.selling_size %} {{ job.selling_size.name }}{% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless info-table">
+                            <tr>
+                                <td><strong>End Size:</strong></td>
+                                <td>{{ job.effective_end_size_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Print Size:</strong></td>
+                                <td>{{ job.printing_size.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Colors:</strong></td>
+                                <td>{{ job.colors_front }}/{{ job.colors_back }}{% if job.special_colors %} + {{ job.special_colors }} special{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Quantity:</strong></td>
+                                <td>{{ job.quantity|floatformat:0 }} pieces</td>
+                            </tr>
+                            <tr>
+                                <td><strong>N-up:</strong></td>
+                                <td>{{ job.n_up }} per sheet</td>
+                            </tr>
+                            {% if job.print_run %}
+                            <tr>
+                                <td><strong>Print Run:</strong></td>
+                                <td>{{ job.print_run }} sheets</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Waste:</strong></td>
+                                <td>{{ job.waste_sheets }} sheets</td>
+                            </tr>
+                            {% endif %}
+                            {% if job.paper_weight_kg %}
+                            <tr>
+                                <td><strong>Paper Weight:</strong></td>
+                                <td>{{ job.paper_weight_kg|floatformat:2 }} kg</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge 
+                                        {% if job.status == 'draft' %}bg-secondary
+                                        {% elif job.status == 'calculated' %}bg-info
+                                        {% elif job.status == 'waiting_manager' %}bg-warning text-dark
+                                        {% elif job.status == 'waiting_client' %}bg-primary
+                                        {% elif job.status == 'approved' %}bg-success
+                                        {% elif job.status == 'urgent' %}bg-danger
+                                        {% elif job.status == 'finished' %}bg-dark
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ job.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Generated:</strong></td>
+                                <td>{{ generated_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Operations -->
+        {% if operations %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ol me-2"></i>Operations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover operations-table">
+                        <thead>
+                            <tr>
+                                <th width="60">#</th>
+                                <th>Operation</th>
+                                <th>Category</th>
+                                <th width="120" class="text-end">Cost</th>
+                                <th width="100" class="text-end">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for operation in operations %}
+                            <tr>
+                                <td>
+                                    <span class="sequence-badge">{{ operation.sequence_order }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ operation.operation_name }}</strong>
+                                        {% if operation.colors_used %}
+                                            <br><small class="text-muted">{{ operation.colors_used }} colors</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ operation.operation.category.name }}</td>
+                                <td class="text-end">
+                                    <strong class="text-success">€{{ operation.total_cost|floatformat:2 }}</strong>
+                                </td>
+                                <td class="text-end">{{ operation.total_time_minutes|hours_minutes }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Calculation Results -->
+        {% if job.total_cost %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-calculator me-2"></i>Calculation Results
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center p-3 bg-primary text-white rounded">
+                            <h4 class="mb-1">€{{ job.total_cost|floatformat:2 }}</h4>
+                            <small>Total Cost</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center p-3 bg-info text-white rounded">
+                            <h4 class="mb-1">
+                                {% if job.total_cost and job.quantity %}
+                                    €{{ job.total_cost|div:job.quantity|floatformat:3 }}
+                                {% else %}
+                                    €0.000
+                                {% endif %}
+                            </h4>
+                            <small>Cost per Piece</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center p-3 bg-success text-white rounded">
+                            <h4 class="mb-1">{{ job.total_time_minutes|hours_minutes }}</h4>
+                            <small>Total Time</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Time Breakdown by Category -->
+                {% if job.get_time_by_category %}
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="text-center p-3 bg-warning text-dark rounded">
+                            <div class="mb-1">
+                                {% for category, minutes in job.get_time_by_category.items %}
+                                    <span class="me-4">
+                                        <strong>{{ category }}:</strong> {{ minutes|hours_minutes }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                            <small>Time by Category</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Paper Cost Breakdown -->
+                <div class="px-2">
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-muted">Paper Cost</h5>
+                                    <h3 class="text-primary">€{{ job.paper_cost|floatformat:2|default:"0.00" }}</h3>
+                                    <small class="text-muted">
+                                        {{ job.sheets_to_buy|default:"0" }} sheets
+                                        {% if job.paper_type %}{{ job.paper_type.name }} {{ job.paper_type.weight_gsm }}g{% endif %}
+                                        {% if job.selling_size %}{{ job.selling_size.name }}{% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-muted">Operations Cost</h5>
+                                    <h3 class="text-success">€{{ job.operations_cost|floatformat:2|default:"0.00" }}</h3>
+                                    <small class="text-muted">All printing operations</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if job.calculated_at %}
+                <div class="small text-muted">
+                    <i class="bi bi-clock me-1"></i>
+                    Last calculated: {{ job.calculated_at|date:"M d, Y H:i" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes -->
+        {% if job.notes %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-left-text me-2"></i>Notes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light">
+                    {{ job.notes|linebreaks }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer-section">
+            <p class="mb-1"><strong>Generated:</strong> {{ generated_at|date:"Y-m-d H:i" }}</p>
+            <p class="mb-0">This estimate is valid for 30 days from the date of generation.</p>
+        </div>
+    </div>
+
+</body>
+</html>

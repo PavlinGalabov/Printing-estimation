@@ -17,12 +17,36 @@ class HomeView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Add basic statistics for the homepage
+        # Add dashboard data for authenticated users
         if self.request.user.is_authenticated:
+            # Staff can see all jobs, regular users only their own
+            if self.request.user.is_staff_user():
+                # Staff users see all jobs
+                base_filter = {'is_template': False}
+                templates_filter = {'is_template': True}
+            else:
+                # Regular users see only their jobs
+                base_filter = {'created_by': self.request.user, 'is_template': False}
+                templates_filter = {'created_by': self.request.user, 'is_template': True}
+
+            # Get workflow-based job categories
+            urgent_jobs = Job.objects.filter(**base_filter, status='urgent').order_by('-created_at')
+            approved_jobs = Job.objects.filter(**base_filter, status='approved').order_by('-created_at')
+            waiting_manager_jobs = Job.objects.filter(**base_filter, status='waiting_manager').order_by('-created_at')
+            waiting_client_jobs = Job.objects.filter(**base_filter, status='waiting_client').order_by('-created_at')
+
             context.update({
-                'total_jobs': Job.objects.filter(is_template=False).count(),
-                'total_templates': Job.objects.filter(is_template=True).count(),
-                'total_clients': Client.objects.filter(is_active=True).count(),
+                # Workflow job lists
+                'urgent_jobs': urgent_jobs,
+                'approved_jobs': approved_jobs,
+                'waiting_manager_jobs': waiting_manager_jobs,
+                'waiting_client_jobs': waiting_client_jobs,
+                
+                # Counts for the cards
+                'urgent_count': urgent_jobs.count(),
+                'approved_count': approved_jobs.count(),
+                'waiting_manager_count': waiting_manager_jobs.count(),
+                'waiting_client_count': waiting_client_jobs.count(),
             })
 
         return context
