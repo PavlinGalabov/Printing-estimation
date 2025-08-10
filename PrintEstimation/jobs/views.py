@@ -2,12 +2,14 @@
 Views for jobs app - job and estimation management.
 """
 
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.views.generic import (
     CreateView, ListView, DetailView, UpdateView, DeleteView, TemplateView
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
+from PrintEstimation.accounts.mixins import OwnerRequiredMixin, SecureFormMixin, StaffRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse, Http404
 from django.views.decorators.http import require_POST
@@ -18,59 +20,16 @@ import json
 from .models import Job, JobOperation, JobVariant, JobPDFExport
 from .forms import (
     JobForm, JobOperationForm, JobStatusChangeForm, JobCalculationForm,
-    AddOperationForm, AddOperationAfterForm, RemoveOperationForm, ReorderOperationsForm
+    AddOperationForm, AddOperationAfterForm, RemoveOperationForm, ReorderOperationsForm,
+    JobVariantForm, MultiQuantityForm, CalculateVariantsForm
 )
 from .services import PrintingCalculator, JobOperationManager
 from PrintEstimation.accounts.models import Client
 from PrintEstimation.operations.models import Operation
 
 
-class DashboardView(LoginRequiredMixin, TemplateView):
-    """Main dashboard view."""
-    template_name = 'jobs/dashboard.html'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        # Staff can see all jobs, regular users only their own
-        if self.request.user.is_staff_user():
-            # Staff users see all jobs
-            base_filter = {'is_template': False}
-            templates_filter = {'is_template': True}
-        else:
-            # Regular users see only their jobs
-            base_filter = {'created_by': self.request.user, 'is_template': False}
-            templates_filter = {'created_by': self.request.user, 'is_template': True}
-
-        # Get workflow-based job categories
-        urgent_jobs = Job.objects.filter(**base_filter, status='urgent').order_by('-created_at')
-        approved_jobs = Job.objects.filter(**base_filter, status='approved').order_by('-created_at')
-        waiting_manager_jobs = Job.objects.filter(**base_filter, status='waiting_manager').order_by('-created_at')
-        waiting_client_jobs = Job.objects.filter(**base_filter, status='waiting_client').order_by('-created_at')
-
-        # Get recent jobs (all active statuses)
-        context['recent_jobs'] = Job.objects.filter(
-            **base_filter
-        ).exclude(status__in=['finished', 'rejected']).order_by('-created_at')[:10]
-
-        # Get workflow statistics and job lists
-        context.update({
-            'urgent_jobs': urgent_jobs,
-            'urgent_count': urgent_jobs.count(),
-            'approved_jobs': approved_jobs,
-            'approved_count': approved_jobs.count(),
-            'waiting_manager_jobs': waiting_manager_jobs,
-            'waiting_manager_count': waiting_manager_jobs.count(),
-            'waiting_client_jobs': waiting_client_jobs,
-            'waiting_client_count': waiting_client_jobs.count(),
-            'total_templates': Job.objects.filter(**templates_filter).count(),
-            'total_active_jobs': Job.objects.filter(**base_filter).exclude(status__in=['finished', 'rejected']).count(),
-        })
-
-        return context
-
-
-class JobListView(LoginRequiredMixin, ListView):
+class JobListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
     """List all jobs (non-templates)."""
     model = Job
     template_name = 'jobs/job_list.html'
@@ -78,14 +37,8 @@ class JobListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        # Staff can see all jobs, regular users only see their own
-        if self.request.user.is_staff_user():
-            queryset = Job.objects.filter(is_template=False)
-        else:
-            queryset = Job.objects.filter(
-                created_by=self.request.user,
-                is_template=False
-            )
+        # Use the parent mixin for ownership filtering, then add our filter
+        queryset = super().get_queryset().filter(is_template=False)
 
         # Filter by status
         status = self.request.GET.get('status')
@@ -109,18 +62,13 @@ class JobListView(LoginRequiredMixin, ListView):
         return context
 
 
-class JobDetailView(LoginRequiredMixin, DetailView):
+class JobDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     """Job detail view with calculation breakdown."""
     model = Job
-    template_name = 'jobs/job_pure_python.html'
+    template_name = 'jobs/job_detail.html'
     context_object_name = 'job'
 
-    def get_queryset(self):
-        # Staff can view all jobs, regular users only their own
-        if self.request.user.is_staff_user():
-            return Job.objects.all()
-        else:
-            return Job.objects.filter(created_by=self.request.user)
+    # Remove get_queryset - handled by OwnerRequiredMixin
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -142,6 +90,13 @@ class JobDetailView(LoginRequiredMixin, DetailView):
         
         # Add available operations for adding
         context['available_operations'] = Operation.objects.filter(is_active=True).order_by('category__sort_order', 'name')
+        
+        # Add variant forms and data
+        context['multi_quantity_form'] = MultiQuantityForm()
+        context['calculate_variants_form'] = CalculateVariantsForm(job=self.object)
+        
+        # Add existing variants
+        context['variants'] = self.object.variants.all().order_by('quantity')
 
         return context
 
@@ -274,11 +229,86 @@ class JobDetailView(LoginRequiredMixin, DetailView):
                 messages.error(request, 'Please confirm operation removal.')
             return redirect('jobs:detail', pk=job.pk)
         
+        # Handle add quantities (multiple variants)
+        elif 'add_quantities' in request.POST:
+            qty_form = MultiQuantityForm(request.POST)
+            if qty_form.is_valid():
+                quantities = qty_form.cleaned_data['quantities']
+                try:
+                    # Remove existing variants for these quantities to avoid duplicates
+                    job.variants.filter(quantity__in=quantities).delete()
+                    
+                    # Create new variants (without calculation initially)
+                    created = 0
+                    for qty in quantities:
+                        variant, created_new = JobVariant.objects.get_or_create(
+                            job=job,
+                            quantity=qty,
+                            defaults={
+                                'total_cost': 0,
+                                'total_time_minutes': 0,
+                                'print_run': 0,
+                                'waste_sheets': 0,
+                                'sheets_to_buy': 0,
+                                'paper_weight_kg': 0,
+                                'paper_cost': 0,
+                                'operations_cost': 0,
+                            }
+                        )
+                        if created_new:
+                            created += 1
+                    
+                    messages.success(request, f'Added {created} quantity variants. Click "Calculate All Variants" to get costs.')
+                except Exception as e:
+                    messages.error(request, f'Error adding variants: {str(e)}')
+            else:
+                messages.error(request, 'Please enter valid quantities.')
+            return redirect('jobs:detail', pk=job.pk)
+        
+        # Handle calculate all variants
+        elif 'calculate_variants' in request.POST:
+            try:
+                calculator = PrintingCalculator(job)
+                variant_quantities = list(job.variants.values_list('quantity', flat=True))
+                
+                if not variant_quantities:
+                    messages.warning(request, 'No quantity variants found. Add some quantities first.')
+                else:
+                    result = calculator.calculate_all_variants(variant_quantities)
+                    
+                    if result['success']:
+                        count = len(result['created_variants'])
+                        messages.success(request, f'Successfully calculated {count} quantity variants!')
+                        
+                        if result['failed_calculations']:
+                            failed_qty = [str(f['quantity']) for f in result['failed_calculations']]
+                            messages.warning(request, f'Failed to calculate: {", ".join(failed_qty)}')
+                    else:
+                        messages.error(request, f'Calculation error: {result["error"]}')
+            except Exception as e:
+                messages.error(request, f'Error calculating variants: {str(e)}')
+            return redirect('jobs:detail', pk=job.pk)
+        
+        # Handle delete variant
+        elif 'delete_variant' in request.POST:
+            variant_id = request.POST.get('variant_id')
+            if variant_id:
+                try:
+                    variant = JobVariant.objects.get(id=variant_id, job=job)
+                    quantity = variant.quantity
+                    variant.delete()
+                    messages.success(request, f'Removed variant for {quantity} pieces.')
+                except JobVariant.DoesNotExist:
+                    messages.error(request, 'Variant not found.')
+                except Exception as e:
+                    messages.error(request, f'Error removing variant: {str(e)}')
+            return redirect('jobs:detail', pk=job.pk)
+        
         # Default redirect (should not reach here)
         return redirect('jobs:detail', pk=job.pk)
 
 
-class JobCreateView(LoginRequiredMixin, CreateView):
+class JobCreateView(LoginRequiredMixin, SecureFormMixin, CreateView):
     """Create new job."""
     model = Job
     form_class = JobForm
@@ -287,6 +317,15 @@ class JobCreateView(LoginRequiredMixin, CreateView):
     def get_initial(self):
         """Pre-fill form with template data if template parameter is provided."""
         initial = super().get_initial()
+        
+        # Handle client parameter
+        client_id = self.request.GET.get('client')
+        if client_id:
+            try:
+                client = Client.objects.get(id=client_id)
+                initial['client'] = client
+            except Client.DoesNotExist:
+                messages.warning(self.request, 'Client not found.')
         
         template_id = self.request.GET.get('template')
         if template_id:
@@ -434,7 +473,7 @@ class JobCreateView(LoginRequiredMixin, CreateView):
         return response
 
 
-class JobUpdateView(LoginRequiredMixin, UpdateView):
+class JobUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     """Update existing job."""
     model = Job
     form_class = JobForm
@@ -454,12 +493,32 @@ class JobUpdateView(LoginRequiredMixin, UpdateView):
         context['job_operations'] = self.object.job_operations.all().order_by('sequence_order')
         return context
 
+    def post(self, request, *args, **kwargs):
+        """Handle both form updates and calculation requests."""
+        # Handle calculation request
+        if 'calculate' in request.POST:
+            job = self.get_object()
+            try:
+                calculator = PrintingCalculator(job)
+                result = calculator.calculate_job()
+                
+                if result['success']:
+                    messages.success(request, 'Job calculated successfully!')
+                else:
+                    messages.error(request, f'Calculation error: {result["error"]}')
+            except Exception as e:
+                messages.error(request, f'Calculation error: {str(e)}')
+            return redirect('jobs:detail', pk=job.pk)
+        
+        # Handle regular form submission
+        return super().post(request, *args, **kwargs)
+
     def form_valid(self, form):
         messages.success(self.request, f'Job "{form.instance.order_name}" updated successfully!')
         return super().form_valid(form)
 
 
-class JobDeleteView(LoginRequiredMixin, DeleteView):
+class JobDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     """Delete job."""
     model = Job
     template_name = 'jobs/job_confirm_delete.html'
@@ -478,170 +537,6 @@ class JobDeleteView(LoginRequiredMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-class JobCalculateView(LoginRequiredMixin, DetailView):
-    """Calculate job costs and generate breakdown."""
-    model = Job
-    template_name = 'jobs/job_pure_python.html'
-    context_object_name = 'job'
-
-    def get_queryset(self):
-        # Staff can calculate all jobs, regular users only their own
-        if self.request.user.is_staff_user():
-            return Job.objects.all()
-        else:
-            return Job.objects.filter(created_by=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Get job operations in order
-        context['job_operations'] = self.object.job_operations.all().order_by('sequence_order')
-        
-        # Set view mode for template
-        context['view_mode'] = 'calculate'
-        
-        # Add forms for Python-based interactions
-        context['status_form'] = JobStatusChangeForm(instance=self.object)
-        context['calculation_form'] = JobCalculationForm()
-        context['add_operation_form'] = AddOperationForm()
-        context['reorder_form'] = ReorderOperationsForm(job=self.object)
-        
-        # Add available operations for adding
-        context['available_operations'] = Operation.objects.filter(is_active=True).order_by('category__sort_order', 'name')
-        
-        return context
-
-    def post(self, request, *args, **kwargs):
-        """Handle form submissions from calculate view (status change, calculation, operations)."""
-        job = self.get_object()
-        
-        # Handle status change
-        if 'change_status' in request.POST:
-            status_form = JobStatusChangeForm(request.POST, instance=job)
-            if status_form.is_valid():
-                old_status = job.get_status_display()
-                status_form.save()
-                new_status = job.get_status_display()
-                messages.success(request, f'Status changed from "{old_status}" to "{new_status}"')
-            else:
-                messages.error(request, 'Error changing status. Please try again.')
-            return redirect('jobs:calculate', pk=job.pk)
-        
-        # Handle calculation
-        elif 'calculate' in request.POST:
-            try:
-                calculator = PrintingCalculator(job)
-                result = calculator.calculate_job()
-                
-                if result['success']:
-                    messages.success(request, 'Job calculated successfully!')
-                else:
-                    messages.error(request, f'Calculation error: {result["error"]}')
-            except Exception as e:
-                messages.error(request, f'Calculation error: {str(e)}')
-            return redirect('jobs:calculate', pk=job.pk)
-        
-        # Handle add operation
-        elif 'add_operation' in request.POST:
-            add_form = AddOperationForm(request.POST)
-            if add_form.is_valid():
-                operation = add_form.cleaned_data['operation']
-                try:
-                    job_operation = JobOperationManager.add_operation(job, operation)
-                    messages.success(request, f'Added operation: {operation.name}')
-                except Exception as e:
-                    messages.error(request, f'Error adding operation: {str(e)}')
-            else:
-                messages.error(request, 'Please select a valid operation.')
-            return redirect('jobs:calculate', pk=job.pk)
-        
-        # Handle add operation after specific position (with anchor)
-        elif 'add_operation_after' in request.POST:
-            add_after_form = AddOperationAfterForm(request.POST)
-            if add_after_form.is_valid():
-                operation = add_after_form.cleaned_data['operation']
-                after_operation_id = add_after_form.cleaned_data['after_operation_id']
-                operation_parameters = add_after_form.cleaned_data.get('operation_parameters', {})
-                try:
-                    from django.db import transaction, models
-                    
-                    with transaction.atomic():
-                        # Get the operation after which to insert
-                        after_operation = JobOperation.objects.get(id=after_operation_id, job=job)
-                        target_sequence = after_operation.sequence_order + 1
-                        
-                        # Shift all operations after this position up by 1 (starting from the highest sequence)
-                        operations_to_update = JobOperation.objects.filter(
-                            job=job, 
-                            sequence_order__gte=target_sequence
-                        ).order_by('-sequence_order')
-                        
-                        for op in operations_to_update:
-                            op.sequence_order += 1
-                            op.save()
-                        
-                        # Add the new operation at the target position
-                        job_operation = JobOperation.objects.create(
-                            job=job,
-                            operation=operation,
-                            sequence_order=target_sequence,
-                            operation_name=operation.name,
-                            makeready_price=operation.makeready_price,
-                            price_per_sheet=operation.price_per_sheet,
-                            plate_price=operation.plate_price,
-                            makeready_time_minutes=operation.makeready_time_minutes,
-                            cleaning_time_minutes=operation.cleaning_time_minutes,
-                            sheets_per_minute=operation.sheets_per_minute,
-                            operation_parameters=operation_parameters,
-                            quantity_before=0,
-                            quantity_after=0,
-                            waste_sheets=0,
-                            processing_quantity=0,
-                            total_cost=0,
-                            total_time_minutes=0,
-                            colors_used=0,
-                        )
-                    
-                    messages.success(request, f'Added "{operation.name}" after "{after_operation.operation_name}"')
-                    # Redirect to the operation we added after (to stay in context)
-                    return redirect(f"{reverse('jobs:calculate', kwargs={'pk': job.pk})}#operation-{after_operation_id}")
-                except JobOperation.DoesNotExist:
-                    messages.error(request, 'Target operation not found.')
-                except Exception as e:
-                    messages.error(request, f'Error adding operation: {str(e)}')
-            else:
-                messages.error(request, 'Please select a valid operation.')
-            return redirect('jobs:calculate', pk=job.pk)
-        
-        # Handle remove operation (with anchor)
-        elif 'remove_operation' in request.POST:
-            remove_form = RemoveOperationForm(request.POST)
-            if remove_form.is_valid() and remove_form.cleaned_data['confirm']:
-                operation_id = remove_form.cleaned_data['operation_id']
-                try:
-                    job_operation = JobOperation.objects.get(id=operation_id, job=job)
-                    operation_name = job_operation.operation_name
-                    # Get the next operation to scroll to (or previous if last)
-                    next_operation = job.job_operations.filter(sequence_order__gt=job_operation.sequence_order).first()
-                    prev_operation = job.job_operations.filter(sequence_order__lt=job_operation.sequence_order).last()
-                    anchor_target = next_operation or prev_operation
-                    
-                    JobOperationManager.remove_operation(job_operation)
-                    messages.success(request, f'Removed operation: {operation_name}')
-                    
-                    # Redirect to nearby operation if one exists
-                    if anchor_target:
-                        return redirect(f"{reverse('jobs:calculate', kwargs={'pk': job.pk})}#operation-{anchor_target.id}")
-                except JobOperation.DoesNotExist:
-                    messages.error(request, 'Operation not found.')
-                except Exception as e:
-                    messages.error(request, f'Error removing operation: {str(e)}')
-            else:
-                messages.error(request, 'Please confirm operation removal.')
-            return redirect('jobs:calculate', pk=job.pk)
-        
-        # Default redirect (should not reach here)
-        return redirect('jobs:calculate', pk=job.pk)
 
 
 @require_POST
@@ -746,14 +641,10 @@ class ReorderOperationsView(LoginRequiredMixin, DetailView):
         job = self.get_object()
 
         try:
-            # Debug logging
-            print(f"Reorder request for job {job.id}")
-            print(f"Request body: {request.body}")
             
             data = json.loads(request.body)
             operation_ids = data.get('operation_ids', [])
             
-            print(f"Operation IDs to reorder: {operation_ids}")
             
             if not operation_ids:
                 return JsonResponse({
@@ -778,25 +669,19 @@ class ReorderOperationsView(LoginRequiredMixin, DetailView):
 
             JobOperationManager.reorder_operations(job, operation_ids)
             
-            print("Reorder completed successfully")
             return JsonResponse({'success': True})
 
         except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
             return JsonResponse({
                 'success': False,
                 'error': f'Invalid JSON data: {str(e)}'
             })
         except ValueError as e:
-            print(f"Validation error: {e}")
             return JsonResponse({
                 'success': False,
                 'error': f'Validation error: {str(e)}'
             })
         except Exception as e:
-            print(f"Reorder error: {e}")
-            import traceback
-            traceback.print_exc()
             return JsonResponse({
                 'success': False,
                 'error': f'Database error: {str(e)}'

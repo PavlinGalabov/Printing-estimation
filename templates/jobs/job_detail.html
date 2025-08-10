@@ -9,89 +9,19 @@
         <div class="col-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'jobs:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'jobs:list' %}">Jobs</a></li>
                     <li class="breadcrumb-item active">{{ job.order_name }}</li>
                 </ol>
             </nav>
             
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h1 class="display-6 mb-1">{{ job.order_name }}</h1>
-                    <div class="d-flex align-items-center">
-                        <span class="badge 
-                            {% if job.status == 'draft' %}bg-secondary
-                            {% elif job.status == 'calculated' %}bg-info
-                            {% elif job.status == 'waiting_manager' %}bg-warning text-dark
-                            {% elif job.status == 'waiting_client' %}bg-primary
-                            {% elif job.status == 'approved' %}bg-success
-                            {% elif job.status == 'urgent' %}bg-danger
-                            {% elif job.status == 'finished' %}bg-dark
-                            {% elif job.status == 'rejected' %}bg-danger
-                            {% else %}bg-secondary{% endif %} me-2">
-                            {{ job.get_status_display }}
-                        </span>
-                        {% if job.job_number %}
-                        <span class="text-muted">Job #{{ job.job_number }}</span>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <div class="btn-group">
-                    <!-- Status Change Dropdown -->
-                    <div class="btn-group me-2" role="group">
-                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="bi bi-arrow-up-right-circle me-1"></i>Change Status
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><h6 class="dropdown-header">Update Job Status</h6></li>
-                            <li><a class="dropdown-item" href="#" onclick="changeStatus('draft')">
-                                <i class="bi bi-circle me-2 text-secondary"></i>Draft
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="changeStatus('calculated')">
-                                <i class="bi bi-circle me-2 text-info"></i>Calculated
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="changeStatus('waiting_manager')">
-                                <i class="bi bi-circle me-2 text-warning"></i>Waiting Manager Approval
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="changeStatus('waiting_client')">
-                                <i class="bi bi-circle me-2 text-primary"></i>Waiting for Client Approval
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="changeStatus('approved')">
-                                <i class="bi bi-circle me-2 text-success"></i>Approved Orders
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="changeStatus('urgent')">
-                                <i class="bi bi-circle me-2 text-danger"></i>Urgent Orders
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="changeStatus('finished')">
-                                <i class="bi bi-circle me-2 text-dark"></i>Finished Order
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="changeStatus('rejected')">
-                                <i class="bi bi-circle me-2 text-danger"></i>Rejected
-                            </a></li>
-                        </ul>
-                    </div>
-                    
-                    <a href="{% url 'jobs:edit' job.pk %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-pencil me-1"></i>Edit
-                    </a>
-                    <a href="{% url 'jobs:calculate' job.pk %}" class="btn btn-primary">
-                        <i class="bi bi-calculator me-1"></i>Calculate
-                    </a>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="bi bi-three-dots"></i>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-file-pdf me-2"></i>Export PDF</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-files me-2"></i>Save as Template</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="{% url 'jobs:delete' job.pk %}">
-                                <i class="bi bi-trash me-2"></i>Delete Job
-                            </a></li>
-                        </ul>
-                    </div>
+            <div class="mb-4">
+                <h1 class="display-6 mb-1">{{ job.order_name }}</h1>
+                <div class="d-flex align-items-center">
+                    {% include 'components/status_badge.html' with status=job.status display_text=job.get_status_display class="me-2" %}
+                    {% if job.job_number %}
+                    <span class="text-muted">Job #{{ job.job_number }}</span>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -121,21 +51,12 @@
                                         {% if job.client.contact_person %}
                                         <br><small class="text-muted">{{ job.client.contact_person }}</small>
                                         {% endif %}
+                                        {% if job.client.phone %}
+                                        <br><small class="text-muted">
+                                            <i class="bi bi-telephone me-1"></i>{{ job.client.phone }}
+                                        </small>
+                                        {% endif %}
                                     </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Order Type:</strong></td>
-                                    <td>
-                                        <span class="badge bg-secondary">{{ job.get_order_type_display }}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Quantity:</strong></td>
-                                    <td>{{ job.quantity|floatformat:0 }} pieces</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>N-up:</strong></td>
-                                    <td>{{ job.n_up }} per sheet</td>
                                 </tr>
                                 {% if job.deadline %}
                                 <tr>
@@ -150,17 +71,17 @@
                                     </td>
                                 </tr>
                                 {% endif %}
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless table-sm">
                                 <tr>
-                                    <td><strong>Colors:</strong></td>
-                                    <td>{{ job.colors_front }}/{{ job.colors_back }}{% if job.special_colors %} + {{ job.special_colors }} special{% endif %}</td>
+                                    <td><strong>Order Type:</strong></td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ job.get_order_type_display }}</span>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>Paper:</strong></td>
-                                    <td>{{ job.paper_type.name }}</td>
+                                    <td>
+                                        {% if job.paper_type.weight_gsm %}{{ job.paper_type.weight_gsm }}g {% endif %}{{ job.paper_type.name }}{% if job.selling_size %} {{ job.selling_size.name }}{% endif %}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>End Size:</strong></td>
@@ -170,10 +91,38 @@
                                     <td><strong>Print Size:</strong></td>
                                     <td>{{ job.printing_size.name }}</td>
                                 </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless table-sm">
                                 <tr>
-                                    <td><strong>Parent Size:</strong></td>
-                                    <td>{{ job.selling_size.name }} ({{ job.parts_of_selling_size }}× printing)</td>
+                                    <td><strong>Colors:</strong></td>
+                                    <td>{{ job.colors_front }}/{{ job.colors_back }}{% if job.special_colors %} + {{ job.special_colors }} special{% endif %}</td>
                                 </tr>
+                                <tr>
+                                    <td><strong>Quantity:</strong></td>
+                                    <td>{{ job.quantity|floatformat:0 }} pieces</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>N-up:</strong></td>
+                                    <td>{{ job.n_up }} per sheet</td>
+                                </tr>
+                                {% if job.print_run %}
+                                <tr>
+                                    <td><strong>Print Run:</strong></td>
+                                    <td>{{ job.print_run }} sheets</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Waste:</strong></td>
+                                    <td>{{ job.waste_sheets }} sheets</td>
+                                </tr>
+                                {% endif %}
+                                {% if job.paper_weight_kg %}
+                                <tr>
+                                    <td><strong>Paper Weight:</strong></td>
+                                    <td>{{ job.paper_weight_kg|floatformat:2 }} kg</td>
+                                </tr>
+                                {% endif %}
                             </table>
                         </div>
                     </div>
@@ -200,13 +149,13 @@
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="text-center p-3 bg-primary text-white rounded">
                                 <h4 class="mb-1">€{{ job.total_cost|floatformat:2 }}</h4>
                                 <small>Total Cost</small>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="text-center p-3 bg-info text-white rounded">
                                 <h4 class="mb-1">
                                     {% if job.total_cost and job.quantity %}
@@ -218,40 +167,55 @@
                                 <small>Cost per Piece</small>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="text-center p-3 bg-success text-white rounded">
                                 <h4 class="mb-1">{{ job.total_time_minutes|hours_minutes }}</h4>
                                 <small>Total Time</small>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                    </div>
+                    
+                    <!-- Time Breakdown by Category -->
+                    {% if job.get_time_by_category %}
+                    <div class="row mb-3">
+                        <div class="col-12">
                             <div class="text-center p-3 bg-warning text-dark rounded">
-                                <h4 class="mb-1">{{ job.sheets_to_buy|default:"0" }}</h4>
-                                <small>Parent Sheets</small>
+                                <div class="mb-1">
+                                    {% for category, minutes in job.get_time_by_category.items %}
+                                        <span class="me-4">
+                                            <strong>{{ category }}:</strong> {{ minutes|hours_minutes }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                                <small>Time by Category</small>
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                     
                     <!-- Paper Cost Breakdown -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title text-muted">Paper Cost</h5>
-                                    <h3 class="text-primary">€{{ job.paper_cost|floatformat:2|default:"0.00" }}</h3>
-                                    <small class="text-muted">
-                                        {{ job.sheets_to_buy|default:"0" }} sheets × {{ job.paper_weight_kg|floatformat:2|default:"0.00" }}kg
-                                        {% if job.paper_type %}@ €{{ job.paper_type.price_per_kg|floatformat:2 }}/kg{% endif %}
-                                    </small>
+                    <div class="px-2">
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title text-muted">Paper Cost</h5>
+                                        <h3 class="text-primary">€{{ job.paper_cost|floatformat:2|default:"0.00" }}</h3>
+                                        <small class="text-muted">
+                                            {{ job.sheets_to_buy|default:"0" }} sheets
+                                            {% if job.paper_type %}{{ job.paper_type.name }} {{ job.paper_type.weight_gsm }}g{% endif %}
+                                            {% if job.selling_size %}{{ job.selling_size.name }}{% endif %}
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title text-muted">Operations Cost</h5>
-                                    <h3 class="text-success">€{{ job.total_material_cost|sub:job.paper_cost|floatformat:2|default:"0.00" }}</h3>
-                                    <small class="text-muted">All printing operations</small>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title text-muted">Operations Cost</h5>
+                                        <h3 class="text-success">€{{ job.operations_cost|floatformat:2|default:"0.00" }}</h3>
+                                        <small class="text-muted">All printing operations</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -327,14 +291,28 @@
             {% endif %}
             
             <!-- Quantity Variants -->
-            {% if variants %}
             <div class="card mt-4">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-graph-up me-2"></i>
                         Quantity Variants
                     </h5>
+                    <div>
+                        {% if variants %}
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" name="calculate_variants" class="btn btn-primary btn-sm">
+                                <i class="bi bi-calculator me-1"></i>Calculate All
+                            </button>
+                        </form>
+                        {% endif %}
+                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addVariantsModal">
+                            <i class="bi bi-plus me-1"></i>Add Quantities
+                        </button>
+                    </div>
                 </div>
+                
+                {% if variants %}
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
@@ -342,28 +320,69 @@
                                 <tr>
                                     <th>Quantity</th>
                                     <th>Total Cost</th>
+                                    <th>Paper Cost</th>
+                                    <th>Operations Cost</th>
                                     <th>Cost per Piece</th>
                                     <th>Total Time</th>
-                                    <th>Savings</th>
+                                    <th>Savings vs Original</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for variant in variants %}
-                                <tr>
+                                <tr{% if variant.total_cost == 0 %} class="table-warning"{% endif %}>
                                     <td><strong>{{ variant.quantity|floatformat:0 }}</strong></td>
-                                    <td>€{{ variant.total_cost|floatformat:2 }}</td>
-                                    <td>€{{ variant.cost_per_piece|floatformat:3 }}</td>
-                                    <td>{{ variant.total_time_minutes|hours_minutes }}</td>
                                     <td>
-                                        {% if job.total_cost and job.quantity %}
+                                        {% if variant.total_cost > 0 %}
+                                            <strong>€{{ variant.total_cost|floatformat:2 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Not calculated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if variant.paper_cost > 0 %}
+                                            €{{ variant.paper_cost|floatformat:2 }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if variant.operations_cost > 0 %}
+                                            €{{ variant.operations_cost|floatformat:2 }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if variant.total_cost > 0 %}
+                                            <strong>€{{ variant.cost_per_piece|floatformat:3 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if variant.total_time_minutes > 0 %}
+                                            {{ variant.total_time_minutes|hours_minutes }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.total_cost and job.quantity and variant.total_cost > 0 %}
                                             {% with original_per_piece=job.total_cost|div:job.quantity %}
                                                 {% with savings_per_piece=original_per_piece|sub:variant.cost_per_piece %}
                                                     {% if savings_per_piece > 0 %}
                                                         <span class="text-success">
-                                                            -€{{ savings_per_piece|floatformat:3 }}/pc
+                                                            <i class="bi bi-arrow-down"></i>
+                                                            €{{ savings_per_piece|floatformat:3 }}/pc
+                                                        </span>
+                                                    {% elif savings_per_piece < 0 %}
+                                                        <span class="text-danger">
+                                                            <i class="bi bi-arrow-up"></i>
+                                                            +€{{ savings_per_piece|multiply:-1|floatformat:3 }}/pc
                                                         </span>
                                                     {% else %}
-                                                        <span class="text-muted">-</span>
+                                                        <span class="text-muted">Same</span>
                                                     {% endif %}
                                                 {% endwith %}
                                             {% endwith %}
@@ -371,39 +390,140 @@
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
+                                    <td>
+                                        <form method="post" class="d-inline" onsubmit="return confirm('Remove this quantity variant?')">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="variant_id" value="{{ variant.id }}">
+                                            <button type="submit" name="delete_variant" class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
+                {% else %}
+                <div class="card-body text-center py-4">
+                    <div class="text-muted mb-3">
+                        <i class="bi bi-graph-up" style="font-size: 3rem;"></i>
+                    </div>
+                    <h6>No Quantity Variants</h6>
+                    <p class="text-muted mb-3">Add multiple quantities to compare costs and find the best price point.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVariantsModal">
+                        <i class="bi bi-plus me-2"></i>Add Your First Quantities
+                    </button>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
+            
+            <!-- Add Quantities Modal -->
+            <div class="modal fade" id="addVariantsModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Quantity Variants</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="{{ multi_quantity_form.quantities.id_for_label }}" class="form-label">
+                                        Quantities to Calculate
+                                    </label>
+                                    {{ multi_quantity_form.quantities }}
+                                    <div class="form-text">{{ multi_quantity_form.quantities.help_text }}</div>
+                                    {% if multi_quantity_form.quantities.errors %}
+                                        <div class="text-danger">{{ multi_quantity_form.quantities.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Tip:</strong> Common quantities for business printing:
+                                    <br><small>Flyers: 500, 1000, 2500, 5000</small>
+                                    <br><small>Business Cards: 250, 500, 1000</small>
+                                    <br><small>Brochures: 100, 250, 500, 1000</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" name="add_quantities" class="btn btn-primary">
+                                    <i class="bi bi-plus me-2"></i>Add Quantities
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Sidebar -->
         <div class="col-lg-4">
+            <div class="sticky-top" style="top: 20px;">
             <!-- Quick Actions -->
-            <div class="card sticky-top" style="top: 20px;">
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="bi bi-lightning me-2"></i>
-                        Quick Actions
-                    </h5>
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <!-- TEST: Always visible export button -->
-                        <a href="{% url 'jobs:pdf_generate' job.pk %}?type=estimate" class="btn btn-warning">
-                            🚀 EXPORT TEST - Click Me!
+                        <a href="{% url 'jobs:edit' job.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil me-2"></i>Edit Job
                         </a>
                         
                         {% if job.status == 'draft' or job.status == 'calculated' %}
-                        <a href="{% url 'jobs:calculate' job.pk %}" class="btn btn-primary">
-                            <i class="bi bi-calculator me-2"></i>
-                            Calculate Costs
-                        </a>
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" name="calculate" class="btn btn-primary w-100">
+                                <i class="bi bi-calculator me-2"></i>Calculate Costs
+                            </button>
+                        </form>
                         {% endif %}
+                        
+                        <a href="{% url 'jobs:delete' job.pk %}" class="btn btn-outline-danger">
+                            <i class="bi bi-trash me-2"></i>Delete Job
+                        </a>
+                        
+                        <!-- Status Change Dropdown -->
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-arrow-up-right-circle me-2"></i>Change Status
+                            </button>
+                            <ul class="dropdown-menu w-100">
+                                <li><h6 class="dropdown-header">Update Job Status</h6></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeStatus('draft')">
+                                    <i class="bi bi-circle me-2 text-secondary"></i>Draft
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeStatus('calculated')">
+                                    <i class="bi bi-circle me-2 text-info"></i>Calculated
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeStatus('waiting_manager')">
+                                    <i class="bi bi-circle me-2 text-warning"></i>Waiting Manager
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeStatus('waiting_client')">
+                                    <i class="bi bi-circle me-2 text-primary"></i>Waiting Client
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeStatus('approved')">
+                                    <i class="bi bi-circle me-2 text-success"></i>Approved
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeStatus('urgent')">
+                                    <i class="bi bi-circle me-2 text-danger"></i>Urgent
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeStatus('finished')">
+                                    <i class="bi bi-circle me-2 text-dark"></i>Finished
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeStatus('rejected')">
+                                    <i class="bi bi-circle me-2 text-danger"></i>Rejected
+                                </a></li>
+                            </ul>
+                        </div>
                         
                         <!-- Export PDF Dropdown -->
                         <div class="btn-group w-100" role="group">
@@ -417,39 +537,8 @@
                                 <li><a class="dropdown-item" href="{% url 'jobs:pdf_generate' job.pk %}?type=job_sheet">
                                     <i class="bi bi-list-check me-2"></i>Job Sheet
                                 </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'jobs:pdf_export_history' %}?job={{ job.pk }}">
-                                    <i class="bi bi-clock-history me-2"></i>Export History
-                                </a></li>
                             </ul>
                         </div>
-                        
-                        <!-- Debug: Simple export links for testing -->
-                        <div class="btn-group w-100" role="group">
-                            <a href="{% url 'jobs:pdf_generate' job.pk %}?type=estimate" class="btn btn-outline-success btn-sm">
-                                📄 Test Estimate
-                            </a>
-                            <a href="{% url 'jobs:pdf_generate' job.pk %}?type=job_sheet" class="btn btn-outline-info btn-sm">
-                                📋 Test Job Sheet
-                            </a>
-                        </div>
-                        
-                        {% if job.total_cost %}
-                        <button class="btn btn-success" disabled>
-                            <i class="bi bi-send me-2"></i>
-                            Send to Client
-                        </button>
-                        {% endif %}
-                        
-                        <a href="{% url 'jobs:edit' job.pk %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-pencil me-2"></i>
-                            Edit Job
-                        </a>
-                        
-                        <button class="btn btn-outline-info" disabled>
-                            <i class="bi bi-files me-2"></i>
-                            Save as Template
-                        </button>
                     </div>
                 </div>
             </div>
@@ -474,17 +563,6 @@
                             <div class="col-6"><strong>Created by:</strong></div>
                             <div class="col-6">{{ job.created_by.get_display_name }}</div>
                             
-                            {% if job.print_run %}
-                            <div class="col-12"><hr class="my-2"></div>
-                            <div class="col-6"><strong>Print Run:</strong></div>
-                            <div class="col-6">{{ job.print_run }} sheets</div>
-                            
-                            <div class="col-6"><strong>Waste:</strong></div>
-                            <div class="col-6">{{ job.waste_sheets }} sheets</div>
-                            
-                            <div class="col-6"><strong>Paper Weight:</strong></div>
-                            <div class="col-6">{{ job.paper_weight_kg|floatformat:2 }} kg</div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -526,6 +604,7 @@
                     </div>
                 </div>
             </div>
+            </div> <!-- End sticky-top wrapper -->
         </div>
     </div>
 </div>
@@ -539,30 +618,28 @@
 {% block extra_js %}
 <script>
 function changeStatus(newStatus) {
-    if (confirm('Are you sure you want to change the job status?')) {
-        fetch(`{% url 'jobs:change_status' job.pk %}`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                'status': newStatus
-            })
+    fetch(`{% url 'jobs:change_status' job.pk %}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'status': newStatus
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload(); // Reload to show updated status
-            } else {
-                alert('Error changing status: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while changing the status.');
-        });
-    }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error changing status: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while changing the status.');
+    });
 }
 </script>
 

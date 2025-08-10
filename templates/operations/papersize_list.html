@@ -2,6 +2,11 @@
 
 {% block title %}Paper Sizes - {{ block.super }}{% endblock %}
 
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row">
@@ -16,73 +21,79 @@
             </div>
 
             {% if paper_sizes %}
-                <div class="row">
-                    {% for paper_size in paper_sizes %}
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <strong>{{ paper_size.name }}</strong>
-                                    {% if paper_size.is_standard %}
-                                        <span class="badge bg-primary">Standard</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Custom</span>
-                                    {% endif %}
-                                </div>
-                                <div class="card-body">
-                                    <div class="row mb-2">
-                                        <div class="col-sm-4">
-                                            <strong>Dimensions:</strong>
-                                        </div>
-                                        <div class="col-sm-8">
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Dimensions</th>
+                                        <th>Area</th>
+                                        <th>Parent Size</th>
+                                        <th>Description</th>
+                                        <th>Type</th>
+                                        {% if user.is_superuser_type or user.is_superuser %}
+                                            <th>Actions</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for paper_size in paper_sizes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ paper_size.name }}</strong>
+                                        </td>
+                                        <td>
+                                            <i class="bi bi-aspect-ratio me-1"></i>
                                             {{ paper_size.width_cm }} × {{ paper_size.height_cm }} cm
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-sm-4">
-                                            <strong>Area:</strong>
-                                        </div>
-                                        <div class="col-sm-8">
-                                            {{ paper_size.area_m2|floatformat:4 }} m²
-                                        </div>
-                                    </div>
-                                    {% if paper_size.parent_size %}
-                                        <div class="row mb-2">
-                                            <div class="col-sm-4">
-                                                <strong>Parent:</strong>
-                                            </div>
-                                            <div class="col-sm-8">
-                                                <small class="text-primary">{{ paper_size.parent_size.name }} (1/{{ paper_size.parts_of_parent }})</small>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                    {% if paper_size.description %}
-                                        <div class="row">
-                                            <div class="col-sm-4">
-                                                <strong>Description:</strong>
-                                            </div>
-                                            <div class="col-sm-8">
-                                                <small class="text-muted">{{ paper_size.description|truncatewords:8 }}</small>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                {% if user.is_superuser_type or user.is_superuser %}
-                                    <div class="card-footer">
-                                        <div class="d-flex gap-2">
-                                            <a href="{% url 'operations:paper_size_edit' paper_size.pk %}" 
-                                               class="btn btn-outline-primary btn-sm flex-fill">
-                                                <i class="bi bi-pencil me-1"></i>Edit
-                                            </a>
-                                            <a href="{% url 'operations:paper_size_delete' paper_size.pk %}" 
-                                               class="btn btn-outline-danger btn-sm flex-fill">
-                                                <i class="bi bi-trash me-1"></i>Delete
-                                            </a>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ paper_size.area_m2|floatformat:4 }} m²</span>
+                                        </td>
+                                        <td>
+                                            {% if paper_size.parent_size %}
+                                                <small class="text-primary">
+                                                    {{ paper_size.parent_size.name }} (1/{{ paper_size.parts_of_parent }})
+                                                </small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if paper_size.description %}
+                                                {{ paper_size.description|truncatewords:8 }}
+                                            {% else %}
+                                                <span class="text-muted fst-italic">No description</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if paper_size.is_standard %}
+                                                <span class="badge bg-primary">Standard</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Custom</span>
+                                            {% endif %}
+                                        </td>
+                                        {% if user.is_superuser_type or user.is_superuser %}
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'operations:paper_size_edit' paper_size.pk %}" 
+                                                       class="btn btn-outline-primary" title="Edit">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a href="{% url 'operations:paper_size_delete' paper_size.pk %}" 
+                                                       class="btn btn-outline-danger" title="Delete">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    {% endfor %}
+                    </div>
                 </div>
 
                 {% if is_paginated %}
@@ -115,14 +126,24 @@
                     </nav>
                 {% endif %}
             {% else %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle me-2"></i>
-                    No paper sizes found. 
-                    {% if user.is_superuser_type or user.is_superuser %}
-                        <a href="{% url 'operations:paper_size_create' %}">Create your first paper size</a>.
-                    {% else %}
-                        Contact an administrator to add paper sizes.
-                    {% endif %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-aspect-ratio text-muted" style="font-size: 4rem;"></i>
+                        <h3 class="mt-3 text-muted">No Paper Sizes Found</h3>
+                        <p class="text-muted">
+                            {% if user.is_superuser_type or user.is_superuser %}
+                                You haven't added any paper sizes yet. Start by creating your first paper size.
+                            {% else %}
+                                Contact an administrator to add paper sizes.
+                            {% endif %}
+                        </p>
+                        {% if user.is_superuser_type or user.is_superuser %}
+                            <a href="{% url 'operations:paper_size_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-lg me-2"></i>
+                                Create Your First Paper Size
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
             {% endif %}
         </div>

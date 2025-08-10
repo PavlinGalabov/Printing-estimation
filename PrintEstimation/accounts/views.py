@@ -2,13 +2,13 @@
 Views for accounts app - user and client management.
 """
 
-from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import (
     CreateView, ListView, DetailView, UpdateView, DeleteView, TemplateView
 )
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
+from django.http import JsonResponse
 from .models import User, Client
 from .forms import ClientForm, CustomUserCreationForm
 
@@ -239,6 +239,9 @@ class ClientUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, f'Client "{form.instance.company_name}" updated successfully!')
         return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('accounts:client_detail', kwargs={'pk': self.object.pk})
 
 
 class ClientDeleteView(LoginRequiredMixin, DeleteView):

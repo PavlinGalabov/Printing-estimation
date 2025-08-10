@@ -119,10 +119,8 @@ class ClientForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Tax ID number'
             }),
-            'payment_terms': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': '30',
-                'min': '0'
+            'payment_terms': forms.Select(attrs={
+                'class': 'form-control'
             }),
             'credit_limit': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -155,12 +153,20 @@ class ClientForm(forms.ModelForm):
     def clean_email(self):
         """Validate email uniqueness."""
         email = self.cleaned_data.get('email')
-        if email:
-            qs = Client.objects.filter(email=email)
-            if self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                raise forms.ValidationError("A client with this email already exists.")
+        if not email:
+            return email
+            
+        # Check for existing clients with this email
+        existing_clients = Client.objects.filter(email__iexact=email)
+        
+        # If this is an update (instance exists and has pk), exclude current instance
+        if hasattr(self, 'instance') and self.instance and hasattr(self.instance, 'pk') and self.instance.pk:
+            existing_clients = existing_clients.exclude(pk=self.instance.pk)
+        
+        # If there are still clients with this email, it's a duplicate
+        if existing_clients.exists():
+            raise forms.ValidationError("A client with this email already exists.")
+            
         return email
 
     def clean_credit_limit(self):

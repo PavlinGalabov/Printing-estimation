@@ -9,12 +9,10 @@ app_name = 'jobs'
 
 urlpatterns = [
     path('', views.JobListView.as_view(), name='list'),
-    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('create/', views.JobCreateView.as_view(), name='create'),
     path('<int:pk>/', views.JobDetailView.as_view(), name='detail'),
     path('<int:pk>/edit/', views.JobUpdateView.as_view(), name='edit'),
     path('<int:pk>/delete/', views.JobDeleteView.as_view(), name='delete'),
-    path('<int:pk>/calculate/', views.JobCalculateView.as_view(), name='calculate'),
     path('<int:pk>/change-status/', views.change_job_status, name='change_status'),
     path('<int:pk>/reorder-operations/', views.ReorderOperationsView.as_view(), name='reorder_operations'),
     path('<int:job_id>/add-operation/', views.add_operation_to_job, name='add_operation'),

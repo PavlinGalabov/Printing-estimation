@@ -17,7 +17,7 @@
         <div class="col-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'jobs:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Dashboard</a></li>
                     {% if using_template %}
                         <li class="breadcrumb-item"><a href="{% url 'jobs:templates' %}">Templates</a></li>
                         <li class="breadcrumb-item active">Create from Template</li>
@@ -417,16 +417,23 @@
                             </button>
                             
                             {% if object %}
-                            <a href="{% url 'jobs:calculate' object.pk %}" class="btn btn-success">
+                            <button type="submit" name="calculate" class="btn btn-success" formnovalidate>
                                 <i class="bi bi-calculator me-2"></i>
                                 Calculate Costs
-                            </a>
+                            </button>
                             {% endif %}
                             
+                            {% if object %}
+                            <a href="{% url 'jobs:detail' object.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Back to Job
+                            </a>
+                            {% else %}
                             <a href="{% url 'jobs:list' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-2"></i>
                                 Back to Jobs
                             </a>
+                            {% endif %}
                         </div>
                         
                         {% if object %}

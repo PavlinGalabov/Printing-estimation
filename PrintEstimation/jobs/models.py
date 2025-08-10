@@ -285,6 +285,24 @@ class Job(models.Model):
             return timedelta(minutes=self.total_time_minutes)
         return None
 
+    @property
+    def operations_cost(self):
+        """Calculate operations cost (total_material_cost - paper_cost)."""
+        total_material = self.total_material_cost or Decimal('0')
+        paper_cost = self.paper_cost or Decimal('0')
+        return total_material - paper_cost
+    
+    def get_time_by_category(self):
+        """Return time breakdown by operation category."""
+        from collections import defaultdict
+        category_times = defaultdict(int)
+        
+        for job_operation in self.job_operations.all():
+            category_name = job_operation.operation.category.name
+            category_times[category_name] += job_operation.total_time_minutes
+        
+        return dict(category_times)
+
 
     def save(self, *args, **kwargs):
         # Generate job number if not set
@@ -496,6 +514,20 @@ class JobVariant(models.Model):
     waste_sheets = models.PositiveIntegerField()
     sheets_to_buy = models.PositiveIntegerField()
     paper_weight_kg = models.DecimalField(max_digits=10, decimal_places=3)
+    
+    # Cost breakdown
+    paper_cost = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0,
+        help_text="Paper cost for this quantity"
+    )
+    operations_cost = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0,
+        help_text="Operations cost for this quantity" 
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 

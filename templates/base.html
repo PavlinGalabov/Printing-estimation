@@ -34,11 +34,6 @@
                 <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'jobs:dashboard' %}">
-                                <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link" href="{% url 'jobs:list' %}">
                                 <i class="bi bi-file-earmark-text me-1"></i>Jobs
                             </a>
@@ -69,6 +64,11 @@
                             </ul>
                         </li>
                     {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:about' %}">
+                            <i class="bi bi-info-circle me-1"></i>About
+                        </a>
+                    </li>
                 </ul>
 
                 <ul class="navbar-nav">

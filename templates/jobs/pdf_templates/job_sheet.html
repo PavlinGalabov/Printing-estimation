@@ -13,9 +13,166 @@
     <style>
         @media print {
             .no-print { display: none !important; }
-            body { margin: 0; font-size: 12px; }
+            body { 
+                margin: 0; 
+                font-size: 11px; 
+                line-height: 1.4;
+                color: #000 !important;
+                background: white !important;
+            }
             .page-break { page-break-before: always; }
-            .card { break-inside: avoid; }
+            .card { 
+                break-inside: avoid;
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+                background: white !important;
+            }
+            .card-header {
+                background: #f8f9fa !important;
+                border-bottom: 1px solid #ccc !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .header-section {
+                background: #f8f9fa !important;
+                color: #333 !important;
+                border: 2px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .header-section.urgent {
+                background: #f8f9fa !important;
+                color: #333 !important;
+                border: 2px solid #333 !important;
+            }
+            .job-info-card {
+                background: #f8f9fa !important;
+                color: #333 !important;
+                border: 2px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .job-info-card.urgent {
+                background: #f8f9fa !important;
+                color: #333 !important;
+                border: 2px solid #333 !important;
+            }
+            .info-item {
+                background: #fff !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .bg-secondary {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .badge {
+                background-color: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .checklist-item {
+                border: 1px solid #333 !important;
+                background: white !important;
+            }
+            .notes-section {
+                background: #f8f9fa !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .print-container {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 8px !important;
+            }
+            .text-muted { color: #6c757d !important; }
+            .header-section {
+                padding: 1rem !important;
+                margin-bottom: 1rem !important;
+            }
+            .header-section h1 {
+                font-size: 1.8rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+            .header-section .subtitle {
+                font-size: 0.9rem !important;
+            }
+            .job-info-card {
+                padding: 1rem !important;
+                margin-bottom: 1rem !important;
+            }
+            .info-grid {
+                gap: 0.5rem !important;
+            }
+            .info-item {
+                padding: 0.5rem !important;
+            }
+            .info-label {
+                font-size: 8px !important;
+                margin-bottom: 0.1rem !important;
+            }
+            .info-value {
+                font-size: 10px !important;
+            }
+            .card {
+                margin-bottom: 1rem !important;
+            }
+            .card-body {
+                padding: 0.75rem !important;
+            }
+            .card-header {
+                padding: 0.5rem 0.75rem !important;
+            }
+            .card-header h5 {
+                font-size: 1rem !important;
+                margin: 0 !important;
+            }
+            .info-table td {
+                padding: 0.25rem 0 !important;
+                font-size: 10px !important;
+            }
+            .col-md-6 {
+                flex: 0 0 50% !important;
+                max-width: 50% !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            .row {
+                margin-left: -0.5rem !important;
+                margin-right: -0.5rem !important;
+            }
+            .operations-table th,
+            .operations-table td {
+                padding: 0.25rem !important;
+                font-size: 9px !important;
+            }
+            .form-check-input {
+                margin: 0 !important;
+                width: 15px !important;
+                height: 15px !important;
+            }
+            .sequence-badge {
+                width: 20px !important;
+                height: 20px !important;
+                font-size: 8px !important;
+            }
+            .notes-section {
+                padding: 1rem !important;
+                margin-top: 1rem !important;
+            }
+            .notes-section h5 {
+                font-size: 1rem !important;
+                margin-bottom: 0.5rem !important;
+            }
         }
         
         body {
@@ -32,8 +189,9 @@
         }
         
         .header-section {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #333;
             padding: 2rem;
             border-radius: 0.5rem;
             margin-bottom: 2rem;
@@ -41,7 +199,9 @@
         }
         
         .header-section.urgent {
-            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #333;
         }
         
         .header-section h1 {
@@ -56,15 +216,18 @@
         }
         
         .job-info-card {
-            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
-            color: white;
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #333;
             padding: 2rem;
             border-radius: 0.5rem;
             margin-bottom: 2rem;
         }
         
         .job-info-card.urgent {
-            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #333;
         }
         
         .info-grid {
@@ -74,10 +237,10 @@
         }
         
         .info-item {
-            background: rgba(255, 255, 255, 0.1);
+            background: white;
+            border: 1px solid #333;
             padding: 1rem;
             border-radius: 0.5rem;
-            backdrop-filter: blur(10px);
         }
         
         .info-label {
@@ -108,48 +271,15 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .checkbox {
-            width: 24px;
-            height: 24px;
-            border: 2px solid #007bff;
-            border-radius: 4px;
-            margin-right: 1rem;
-            background: white;
-            flex-shrink: 0;
-        }
         
-        .operation-number {
-            background: #007bff;
-            color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            margin-right: 1rem;
-            flex-shrink: 0;
-        }
         
-        .operation-details {
-            flex: 1;
-        }
         
-        .operation-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.25rem;
-        }
         
-        .operation-meta {
-            color: #6c757d;
-            font-size: 0.875rem;
-        }
         
         .notes-section {
-            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            background: #f8f9fa;
             color: #333;
+            border: 1px solid #333;
             padding: 2rem;
             border-radius: 0.5rem;
             margin-top: 2rem;
@@ -203,6 +333,19 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         
+        .nav-buttons {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-buttons .btn {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
         .info-table td {
             padding: 0.5rem 0;
             border: none;
@@ -213,9 +356,46 @@
             color: #495057;
             width: 40%;
         }
+        
+        .operations-table {
+            margin-bottom: 0;
+        }
+        
+        .operations-table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .operations-table td {
+            vertical-align: middle;
+        }
+        
+        .sequence-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            background-color: #333;
+            color: white;
+        }
     </style>
 </head>
 <body>
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons no-print">
+        <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Job
+        </a>
+        <a href="{% url 'jobs:list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list me-2"></i>All Jobs
+        </a>
+    </div>
+    
     <!-- Print Button -->
     <button class="btn btn-success print-button no-print" onclick="window.print()">
         <i class="bi bi-printer me-2"></i>Print Job Sheet
@@ -247,7 +427,15 @@
                 </div>
                 <div class="info-item">
                     <div class="info-label">Client</div>
-                    <div class="info-value">{{ job.client.company_name|upper }}</div>
+                    <div class="info-value">
+                        {{ job.client.company_name|upper }}
+                        {% if job.client.contact_person %}
+                        <br><small>{{ job.client.contact_person }}</small>
+                        {% endif %}
+                        {% if job.client.phone %}
+                        <br><small><i class="bi bi-telephone me-1"></i>{{ job.client.phone }}</small>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Quantity</div>
@@ -295,57 +483,55 @@
                     <div class="col-md-6">
                         <table class="table table-borderless info-table">
                             <tr>
-                                <td><strong>Paper Type:</strong></td>
-                                <td>{{ job.paper_type.name }} ({{ job.paper_type.weight_gsm }}gsm)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>End Size:</strong></td>
+                                <td><strong>Paper:</strong></td>
                                 <td>
-                                    {% if job.end_size %}
-                                        {{ job.end_size }}
-                                    {% else %}
-                                        {{ job.custom_end_width }}×{{ job.custom_end_height }} cm
-                                    {% endif %}
+                                    {% if job.paper_type.weight_gsm %}{{ job.paper_type.weight_gsm }}g {% endif %}{{ job.paper_type.name }}{% if job.selling_size %} {{ job.selling_size.name }}{% endif %}
                                 </td>
                             </tr>
                             <tr>
+                                <td><strong>End Size:</strong></td>
+                                <td>{{ job.effective_end_size_name }}</td>
+                            </tr>
+                            <tr>
                                 <td><strong>Print Size:</strong></td>
-                                <td>{{ job.printing_size }}</td>
+                                <td>{{ job.printing_size.name }}</td>
                             </tr>
                             <tr>
-                                <td><strong>Parent Size:</strong></td>
-                                <td>{{ job.selling_size }}</td>
+                                <td><strong>Colors:</strong></td>
+                                <td>{{ job.colors_front }}/{{ job.colors_back }}{% if job.special_colors %} + {{ job.special_colors }} special{% endif %}</td>
                             </tr>
                             <tr>
-                                <td><strong>Parts/Parent:</strong></td>
-                                <td>{{ job.parts_of_selling_size }}</td>
+                                <td><strong>N-up:</strong></td>
+                                <td>{{ job.n_up }} per sheet</td>
                             </tr>
                         </table>
                     </div>
                     <div class="col-md-6">
                         <table class="table table-borderless info-table">
-                            <tr>
-                                <td><strong>N-up:</strong></td>
-                                <td>{{ job.n_up }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Colors Front:</strong></td>
-                                <td>{{ job.colors_front }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Colors Back:</strong></td>
-                                <td>{{ job.colors_back }}</td>
-                            </tr>
                             {% if job.print_run %}
                             <tr>
                                 <td><strong>Print Run:</strong></td>
-                                <td>{{ job.print_run|floatformat:0 }} sheets</td>
+                                <td>{{ job.print_run }} sheets</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Waste:</strong></td>
+                                <td>{{ job.waste_sheets }} sheets</td>
                             </tr>
                             <tr>
                                 <td><strong>Sheets to Buy:</strong></td>
                                 <td>{{ job.sheets_to_buy|floatformat:0 }} sheets</td>
                             </tr>
                             {% endif %}
+                            {% if job.paper_weight_kg %}
+                            <tr>
+                                <td><strong>Paper Weight:</strong></td>
+                                <td>{{ job.paper_weight_kg|floatformat:2 }} kg</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Order Type:</strong></td>
+                                <td><span class="badge bg-secondary">{{ job.get_order_type_display }}</span></td>
+                            </tr>
                         </table>
                     </div>
                 </div>
@@ -360,24 +546,49 @@
                 </h5>
             </div>
             <div class="card-body">
-                {% for operation in operations %}
-                <div class="checklist-item">
-                    <span class="checkbox"></span>
-                    <span class="operation-number">{{ operation.sequence_order }}</span>
-                    <div class="operation-details">
-                        <div class="operation-name">{{ operation.operation_name }}</div>
-                        <div class="operation-meta">
-                            <i class="bi bi-tag me-1"></i>{{ operation.operation.category.name }}
-                            {% if operation.total_time_minutes %}
-                                <i class="bi bi-clock ms-2 me-1"></i>Est. {{ operation.total_time_minutes|hours_minutes }}
-                            {% endif %}
-                            {% if operation.colors_used %}
-                                <i class="bi bi-palette ms-2 me-1"></i>{{ operation.colors_used }} colors
-                            {% endif %}
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-hover operations-table">
+                        <thead>
+                            <tr>
+                                <th width="50">✓</th>
+                                <th width="60">#</th>
+                                <th>Operation</th>
+                                <th>Category</th>
+                                <th width="100" class="text-end">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for operation in operations %}
+                            <tr>
+                                <td class="text-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="op{{ operation.id }}">
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="sequence-badge">{{ operation.sequence_order }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ operation.operation_name }}</strong>
+                                        {% if operation.colors_used %}
+                                            <br><small class="text-muted">{{ operation.colors_used }} colors</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ operation.operation.category.name }}</td>
+                                <td class="text-end">
+                                    {% if operation.total_time_minutes %}
+                                        {{ operation.total_time_minutes|hours_minutes }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                {% endfor %}
             </div>
         </div>
         {% endif %}
@@ -427,7 +638,5 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

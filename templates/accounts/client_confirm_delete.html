@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Client - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Confirm Delete
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-x text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h5 class="text-center mb-3">Delete Client</h5>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> You are about to delete this client permanently.
+                    </div>
+                    
+                    <div class="client-info bg-light p-3 rounded mb-4">
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Company:</strong></div>
+                            <div class="col-sm-8">{{ object.company_name }}</div>
+                        </div>
+                        {% if object.contact_person %}
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Contact:</strong></div>
+                            <div class="col-sm-8">{{ object.contact_person }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Email:</strong></div>
+                            <div class="col-sm-8">{{ object.email }}</div>
+                        </div>
+                        {% if object.phone %}
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Phone:</strong></div>
+                            <div class="col-sm-8">{{ object.phone }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="text-muted text-center">
+                        This action cannot be undone. All data associated with this client will be permanently removed.
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'accounts:client_detail' object.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Delete Client
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

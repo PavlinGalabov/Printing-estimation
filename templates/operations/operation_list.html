@@ -3,6 +3,11 @@
 
 {% block title %}Operations - {{ block.super }}{% endblock %}
 
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'css/jobs.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row">
@@ -15,57 +20,84 @@
             </div>
 
             {% if operations %}
-                <div class="row">
-                    {% for operation in operations %}
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <span class="badge rounded-pill" style="background-color: {{ operation.category.color }}">
-                                        {{ operation.category.name }}
-                                    </span>
-                                    {% if operation.is_active %}
-                                        <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inactive</span>
-                                    {% endif %}
-                                </div>
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ operation.name }}</h5>
-                                    {% if operation.description %}
-                                        <p class="card-text text-muted">{{ operation.description|truncatewords:15 }}</p>
-                                    {% endif %}
-                                    
-                                    <div class="row small text-muted">
-                                        <div class="col-6">
-                                            <strong>Setup:</strong> ${{ operation.makeready_price }}
-                                        </div>
-                                        <div class="col-6">
-                                            <strong>Per Sheet:</strong> ${{ operation.price_per_sheet }}
-                                        </div>
-                                    </div>
-                                    
-                                    {% if operation.uses_colors %}
-                                        <div class="mt-2">
-                                            <span class="badge bg-info">Color-based</span>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                <div class="card-footer">
-                                    <div class="btn-group w-100" role="group">
-                                        <a href="{% url 'operations:detail' operation.pk %}" class="btn btn-outline-primary btn-sm">
-                                            <i class="bi bi-eye me-1"></i>View
-                                        </a>
-                                        <a href="{% url 'operations:edit' operation.pk %}" class="btn btn-outline-secondary btn-sm">
-                                            <i class="bi bi-pencil me-1"></i>Edit
-                                        </a>
-                                        <a href="{% url 'operations:delete' operation.pk %}" class="btn btn-outline-danger btn-sm">
-                                            <i class="bi bi-trash me-1"></i>Delete
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Setup Cost</th>
+                                        <th>Per Sheet</th>
+                                        <th>Description</th>
+                                        <th>Features</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for operation in operations %}
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                <a href="{% url 'operations:detail' operation.pk %}" class="text-decoration-none">
+                                                    {{ operation.name }}
+                                                </a>
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge rounded-pill" style="background-color: {{ operation.category.color }}">
+                                                {{ operation.category.name }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>${{ operation.makeready_price }}</strong>
+                                        </td>
+                                        <td>
+                                            <strong>${{ operation.price_per_sheet }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if operation.description %}
+                                                {{ operation.description|truncatewords:10 }}
+                                            {% else %}
+                                                <span class="text-muted fst-italic">No description</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if operation.uses_colors %}
+                                                <span class="badge bg-info">Color-based</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if operation.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'operations:detail' operation.pk %}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'operations:edit' operation.pk %}" 
+                                                   class="btn btn-outline-secondary" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="{% url 'operations:delete' operation.pk %}" 
+                                                   class="btn btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    {% endfor %}
+                    </div>
                 </div>
 
                 {% if is_paginated %}
@@ -98,9 +130,18 @@
                     </nav>
                 {% endif %}
             {% else %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle me-2"></i>
-                    No operations found. <a href="{% url 'operations:create' %}">Create your first operation</a>.
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-gear text-muted" style="font-size: 4rem;"></i>
+                        <h3 class="mt-3 text-muted">No Operations Found</h3>
+                        <p class="text-muted">
+                            You haven't added any operations yet. Start by creating your first operation.
+                        </p>
+                        <a href="{% url 'operations:create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-lg me-2"></i>
+                            Create Your First Operation
+                        </a>
+                    </div>
                 </div>
             {% endif %}
         </div>

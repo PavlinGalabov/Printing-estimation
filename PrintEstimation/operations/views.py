@@ -2,28 +2,23 @@
 Views for operations app - operation and material management.
 """
 
-from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import (
     CreateView, ListView, DetailView, UpdateView, DeleteView
 )
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from PrintEstimation.accounts.mixins import SuperuserRequiredMixin
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.db.models import ProtectedError
 from .models import (
     Operation, OperationCategory, PaperType,
     PaperSize,
 )
 
 
-class SuperuserRequiredMixin(UserPassesTestMixin):
-    """Mixin to require superuser access."""
-
-    def test_func(self):
-        return self.request.user.is_authenticated and (
-            self.request.user.is_superuser_type or self.request.user.is_superuser
-        )
+# Remove the old SuperuserRequiredMixin - now imported from accounts.mixins
 
 
 # Operation Views
@@ -213,8 +208,36 @@ class PaperTypeDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        messages.success(request, f'Paper type "{self.object.name}" deleted successfully!')
-        return super().delete(request, *args, **kwargs)
+        try:
+            paper_type_name = self.object.name
+            response = super().delete(request, *args, **kwargs)
+            messages.success(request, f'Paper type "{paper_type_name}" deleted successfully!')
+            return response
+        except ProtectedError as e:
+            # Get the protected objects information
+            protected_objects = []
+            for obj in e.protected_objects:
+                model_name = obj._meta.verbose_name
+                if hasattr(obj, 'name'):
+                    obj_name = obj.name
+                elif hasattr(obj, 'order_name'):
+                    obj_name = obj.order_name
+                elif hasattr(obj, '__str__'):
+                    obj_name = str(obj)
+                else:
+                    obj_name = f"{model_name} #{obj.pk}"
+                protected_objects.append(f"{model_name}: {obj_name}")
+            
+            protected_list = ", ".join(protected_objects[:5])  # Show first 5 objects
+            if len(protected_objects) > 5:
+                protected_list += f" and {len(protected_objects) - 5} more"
+            
+            messages.error(request, 
+                f'Cannot delete paper type "{self.object.name}" because it is being used by: {protected_list}. '
+                'Please remove these references first.')
+            
+            from django.shortcuts import redirect
+            return redirect(self.success_url)
 
 
 # Paper Size Views
@@ -261,8 +284,36 @@ class PaperSizeDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        messages.success(request, f'Paper size "{self.object.name}" deleted successfully!')
-        return super().delete(request, *args, **kwargs)
+        try:
+            paper_size_name = self.object.name
+            response = super().delete(request, *args, **kwargs)
+            messages.success(request, f'Paper size "{paper_size_name}" deleted successfully!')
+            return response
+        except ProtectedError as e:
+            # Get the protected objects information
+            protected_objects = []
+            for obj in e.protected_objects:
+                model_name = obj._meta.verbose_name
+                if hasattr(obj, 'name'):
+                    obj_name = obj.name
+                elif hasattr(obj, 'order_name'):
+                    obj_name = obj.order_name
+                elif hasattr(obj, '__str__'):
+                    obj_name = str(obj)
+                else:
+                    obj_name = f"{model_name} #{obj.pk}"
+                protected_objects.append(f"{model_name}: {obj_name}")
+            
+            protected_list = ", ".join(protected_objects[:5])  # Show first 5 objects
+            if len(protected_objects) > 5:
+                protected_list += f" and {len(protected_objects) - 5} more"
+            
+            messages.error(request, 
+                f'Cannot delete paper size "{self.object.name}" because it is being used by: {protected_list}. '
+                'Please remove these references first.')
+            
+            from django.shortcuts import redirect
+            return redirect(self.success_url)
 
 
 # Machine Views

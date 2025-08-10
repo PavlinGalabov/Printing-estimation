@@ -4,7 +4,7 @@ Forms for job creation and management.
 
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Job, JobOperation
+from .models import Job, JobOperation, JobVariant
 from PrintEstimation.accounts.models import Client
 from PrintEstimation.operations.models import Operation, PaperType, PaperSize
 
@@ -254,3 +254,83 @@ class ReorderOperationsForm(forms.Form):
                     widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
                     label=f'{op.operation_name} - Order'
                 )
+
+
+class JobVariantForm(forms.ModelForm):
+    """Form for creating/editing individual job variants."""
+    
+    class Meta:
+        model = JobVariant
+        fields = ['quantity']
+        widgets = {
+            'quantity': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'placeholder': 'Enter quantity (e.g. 1000)'
+            })
+        }
+    
+    def clean_quantity(self):
+        quantity = self.cleaned_data.get('quantity')
+        if quantity and quantity < 1:
+            raise ValidationError("Quantity must be at least 1.")
+        return quantity
+
+
+class MultiQuantityForm(forms.Form):
+    """Form for adding multiple quantity variants at once."""
+    
+    quantities = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Enter quantities separated by commas\nExample: 500, 1000, 2000, 5000'
+        }),
+        help_text="Enter quantities separated by commas (e.g., 500, 1000, 2000, 5000)"
+    )
+    
+    def clean_quantities(self):
+        """Parse and validate quantities."""
+        quantities_str = self.cleaned_data.get('quantities', '')
+        if not quantities_str.strip():
+            raise ValidationError("Please enter at least one quantity.")
+        
+        quantities = []
+        for qty_str in quantities_str.split(','):
+            qty_str = qty_str.strip()
+            if not qty_str:
+                continue
+            try:
+                qty = int(qty_str)
+                if qty < 1:
+                    raise ValidationError(f"Quantity {qty} must be at least 1.")
+                if qty in quantities:
+                    raise ValidationError(f"Duplicate quantity: {qty}")
+                quantities.append(qty)
+            except ValueError:
+                raise ValidationError(f"'{qty_str}' is not a valid number.")
+        
+        if not quantities:
+            raise ValidationError("Please enter at least one valid quantity.")
+        
+        if len(quantities) > 20:
+            raise ValidationError("Maximum 20 quantity variants allowed.")
+        
+        return sorted(quantities)
+
+
+class CalculateVariantsForm(forms.Form):
+    """Form for triggering variant calculations."""
+    
+    calculate_all = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label="Recalculate all existing variants"
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.job = kwargs.pop('job', None)
+        super().__init__(*args, **kwargs)
+
+

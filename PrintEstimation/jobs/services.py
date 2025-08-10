@@ -269,11 +269,12 @@ class PrintingCalculator:
 
     def _update_job_totals(self):
         """Update job with calculated totals."""
-        # Include paper cost in total
-        total_operations_cost = self.total_cost
+        # Operations cost is what we calculated in self.total_cost
+        operations_cost = self.total_cost
         paper_cost = self.job.paper_cost or Decimal('0')
         
-        self.job.total_material_cost = total_operations_cost + paper_cost
+        # Store operations cost for reference and total material cost
+        self.job.total_material_cost = operations_cost + paper_cost
         self.job.total_labor_cost = Decimal('0')
         self.job.total_outsourcing_cost = Decimal('0')
         self.job.total_cost = self.job.total_material_cost + self.job.total_labor_cost + self.job.total_outsourcing_cost
@@ -295,6 +296,157 @@ class PrintingCalculator:
             return f"{hours} hour{'s' if hours != 1 else ''}"
         else:
             return f"{hours}h {remaining_minutes}m"
+
+    def calculate_variant(self, quantity):
+        """
+        Calculate cost and time for a specific quantity variant.
+        Returns calculation data without saving to database.
+        """
+        # Store original job quantity and calculated values
+        original_quantity = self.job.quantity
+        original_print_run = self.job.print_run
+        original_sheets_to_buy = self.job.sheets_to_buy
+        original_paper_weight = self.job.paper_weight_kg
+        original_paper_cost = self.job.paper_cost
+        original_total_material_cost = self.job.total_material_cost
+        original_total_cost = self.job.total_cost
+        
+        try:
+            # Temporarily set the job quantity to the variant quantity
+            self.job.quantity = quantity
+            
+            # Recalculate paper requirements for this quantity
+            self._calculate_paper_requirements()
+            
+            # Process operations with the new quantity
+            job_operations = self.job.job_operations.all().order_by('sequence_order')
+            
+            if not job_operations.exists():
+                return {
+                    'success': False,
+                    'error': 'No operations defined for this job.'
+                }
+            
+            # Reset calculation state
+            self.current_quantity = self.job.sheets_to_buy
+            self.total_cost = Decimal('0')
+            self.total_time = 0
+            self.operations_data = []
+            
+            # Process each operation
+            for job_operation in job_operations:
+                result = self._calculate_operation(job_operation.operation, job_operation)
+                
+                if not result['success']:
+                    return result
+                
+                # Update running totals
+                self.total_cost += result['total_cost']
+                self.total_time += result['total_time_minutes']
+                self.current_quantity = result['quantity_after']
+                
+                # Store operation data
+                self.operations_data.append({
+                    'operation': job_operation.operation,
+                    'operation_name': job_operation.operation_name,
+                    'sequence_order': job_operation.sequence_order,
+                    **result
+                })
+            
+            # Calculate paper cost (use the job's calculated paper_cost)
+            paper_cost = self.job.paper_cost or Decimal('0')
+            
+            # Operations cost is what we calculated in self.total_cost
+            operations_cost = self.total_cost
+            
+            # Total cost is operations + paper
+            total_cost = operations_cost + paper_cost
+            
+            return {
+                'success': True,
+                'quantity': quantity,
+                'total_cost': total_cost,
+                'paper_cost': paper_cost,
+                'operations_cost': operations_cost,
+                'total_time_minutes': self.total_time,
+                'print_run': self.job.print_run,
+                'waste_sheets': self.job.waste_sheets,
+                'sheets_to_buy': self.job.sheets_to_buy,
+                'paper_weight_kg': self.job.paper_weight_kg,
+                'operations_data': self.operations_data,
+                'cost_per_piece': total_cost / quantity if quantity > 0 else Decimal('0')
+            }
+            
+        finally:
+            # Always restore original values
+            self.job.quantity = original_quantity
+            self.job.print_run = original_print_run
+            self.job.sheets_to_buy = original_sheets_to_buy
+            self.job.paper_weight_kg = original_paper_weight
+            self.job.paper_cost = original_paper_cost
+            self.job.total_material_cost = original_total_material_cost
+            self.job.total_cost = original_total_cost
+
+    def calculate_all_variants(self, quantities):
+        """
+        Calculate multiple quantity variants and save them to the database.
+        
+        Args:
+            quantities: List of quantities to calculate
+            
+        Returns:
+            Dictionary with success status and created variants
+        """
+        if not quantities:
+            return {
+                'success': False,
+                'error': 'No quantities provided'
+            }
+        
+        try:
+            # Clear existing variants
+            self.job.variants.all().delete()
+            
+            created_variants = []
+            failed_calculations = []
+            
+            for quantity in quantities:
+                # Calculate this variant
+                result = self.calculate_variant(quantity)
+                
+                if result['success']:
+                    # Create JobVariant record
+                    variant = JobVariant.objects.create(
+                        job=self.job,
+                        quantity=quantity,
+                        total_cost=result['total_cost'],
+                        paper_cost=result['paper_cost'],
+                        operations_cost=result['operations_cost'],
+                        total_time_minutes=result['total_time_minutes'],
+                        print_run=result['print_run'],
+                        waste_sheets=result['waste_sheets'],
+                        sheets_to_buy=result['sheets_to_buy'],
+                        paper_weight_kg=result['paper_weight_kg']
+                    )
+                    created_variants.append(variant)
+                else:
+                    failed_calculations.append({
+                        'quantity': quantity,
+                        'error': result.get('error', 'Unknown error')
+                    })
+            
+            return {
+                'success': True,
+                'created_variants': created_variants,
+                'failed_calculations': failed_calculations,
+                'message': f'Successfully calculated {len(created_variants)} variants'
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Error calculating variants: {str(e)}'
+            }
 
 
 class JobOperationManager:

@@ -1,0 +1,19 @@
+{% comment %}
+Reusable breadcrumb component
+Usage: {% include 'components/breadcrumb.html' with breadcrumbs=breadcrumb_items %}
+Where breadcrumb_items is a list of dicts: [{'url': 'core:home', 'text': 'Dashboard'}, {'text': 'Current Page', 'active': True}]
+{% endcomment %}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        {% for item in breadcrumbs %}
+            {% if item.active %}
+                <li class="breadcrumb-item active">{{ item.text }}</li>
+            {% else %}
+                <li class="breadcrumb-item">
+                    <a href="{% url item.url %}">{{ item.text }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
