@@ -183,4 +183,6 @@ htmlcov/
 .idea/
 
 # Production files
-collected_static/
+collected_static/__pycache__/
+*.py[cod]
+.venv/
