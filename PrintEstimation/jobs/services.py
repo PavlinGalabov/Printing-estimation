@@ -42,7 +42,8 @@ class PrintingCalculator:
             }
 
         # Step 3: Process each operation sequentially
-        self.current_quantity = self.job.sheets_to_buy
+        # Start with the target print run - operations will add their own waste
+        self.current_quantity = self.job.print_run
         self.total_cost = Decimal('0')
         self.total_time = 0
         self.operations_data = []
@@ -81,10 +82,25 @@ class PrintingCalculator:
 
     def _calculate_paper_requirements(self):
         """Calculate paper requirements based on job parameters and operation waste."""
-        # Calculate print run (quantity / n_up)
-        print_run = self.job.quantity // self.job.n_up
-        if self.job.quantity % self.job.n_up > 0:
-            print_run += 1  # Round up for partial sheets
+        # Calculate print run accounting for book signatures if applicable
+        if self.job.number_of_pages and self.job.n_up_signatures:
+            # For books: calculate based on signatures needed
+            # n_up_signatures = pages per signature (e.g., 4 pages per signature)
+            # Each sheet prints front + back = n_up_signatures × 2 total pages per sheet
+            pages_per_sheet = self.job.n_up_signatures * 2  # front + back
+            
+            # Total pages needed for all books
+            total_pages_needed = self.job.quantity * self.job.number_of_pages
+            
+            # Sheets needed = total pages ÷ pages per sheet
+            print_run = total_pages_needed // pages_per_sheet
+            if total_pages_needed % pages_per_sheet > 0:
+                print_run += 1  # Round up for partial sheets
+        else:
+            # For regular products: standard calculation
+            print_run = self.job.quantity // self.job.n_up
+            if self.job.quantity % self.job.n_up > 0:
+                print_run += 1  # Round up for partial sheets
 
         # Calculate total waste needed by simulating all operations
         total_waste_needed = self._estimate_total_waste(print_run)
@@ -205,7 +221,7 @@ class PrintingCalculator:
             return {
                 'success': True,
                 'operation': operation,
-                'quantity_before': self.current_quantity,
+                'quantity_before': cost_result['processing_quantity'],  # Show total processed (includes waste)
                 'quantity_after': cost_result['quantity_after'],
                 'waste_sheets': cost_result['waste_sheets'],
                 'processing_quantity': cost_result['processing_quantity'],
@@ -386,6 +402,8 @@ class PrintingCalculator:
             self.job.paper_cost = original_paper_cost
             self.job.total_material_cost = original_total_material_cost
             self.job.total_cost = original_total_cost
+            # IMPORTANT: Save the restored values to database
+            self.job.save()
 
     def calculate_all_variants(self, quantities):
         """

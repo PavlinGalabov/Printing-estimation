@@ -192,14 +192,14 @@ class Operation(models.Model):
                 total_cost = base_cost
 
         # Calculate quantity after this operation
-        # Waste is used for cost calculation but doesn't reduce the output quantity
-        # The output quantity is the input quantity modified by operation-specific transformations
+        # The output quantity continues to the next operation
+        # For printing operations: waste is additional sheets needed, but good output stays the same
         quantity_after = current_quantity
         
         # Apply dynamic parameters first (e.g., cut_pieces)
-        if 'cut_pieces' in operation_parameters:
+        if operation_parameters and 'cut_pieces' in operation_parameters:
             quantity_after = quantity_after * operation_parameters['cut_pieces']
-        elif 'divide_by' in operation_parameters:
+        elif operation_parameters and 'divide_by' in operation_parameters:
             quantity_after = quantity_after // operation_parameters['divide_by']
         else:
             # Use static operation settings as fallback

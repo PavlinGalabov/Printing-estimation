@@ -616,7 +616,13 @@ def remove_operation_from_job(request, job_id, operation_id):
         return JsonResponse({'success': False, 'error': 'Authentication required'})
 
     try:
-        job = get_object_or_404(Job, id=job_id, created_by=request.user)
+        # Use the same queryset logic as JobUpdateView
+        if request.user.is_staff_user():
+            jobs_queryset = Job.objects.all()
+        else:
+            jobs_queryset = Job.objects.filter(created_by=request.user)
+            
+        job = get_object_or_404(jobs_queryset, id=job_id)
         job_operation = get_object_or_404(JobOperation, id=operation_id, job=job)
 
         JobOperationManager.remove_operation(job_operation)

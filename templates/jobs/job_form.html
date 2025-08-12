@@ -944,6 +944,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('backToSelectionBtn')?.addEventListener('click', showOperationSelection);
     document.getElementById('saveNewOperationBtn')?.addEventListener('click', createNewOperation);
     
+    // Add event listener for modal close/dismiss to reset dialog state
+    const modal = document.getElementById('addOperationModal');
+    if (modal) {
+        modal.addEventListener('hidden.bs.modal', function () {
+            console.log('Modal dismissed - resetting to operation selection');
+            showOperationSelection();
+        });
+    }
+    
     // Operation parameter functions
     function needsParameters(operationName) {
         // Define which operations need parameters
@@ -951,6 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'Cut in N pieces',
             'Cut in N-piece', 
             'Cut to pieces',
+            'Cutting',  // Added generic cutting operation
             'Fold in N',
             'Divide by N'
         ];
@@ -959,9 +969,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function showOperationParameters() {
         console.log('showOperationParameters called for:', selectedOperationName);
-        document.getElementById('operationSelection').style.display = 'none';
-        document.getElementById('operationParameters').style.display = 'block';
-        document.getElementById('selectedOperationName').textContent = selectedOperationName;
+        
+        const operationSelection = document.getElementById('operationSelection');
+        const operationParameters = document.getElementById('operationParameters');
+        const selectedNameElement = document.getElementById('selectedOperationName');
+        
+        if (!operationParameters) {
+            console.error('operationParameters element not found');
+            return;
+        }
+        
+        operationSelection.style.display = 'none';
+        operationParameters.style.display = 'block';
+        
+        if (selectedNameElement) {
+            selectedNameElement.textContent = selectedOperationName;
+        }
         
         // Generate parameter inputs based on operation type
         generateParameterInputs();
@@ -988,9 +1011,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function generateParameterInputs() {
         const container = document.getElementById('parameterInputs');
+        if (!container) {
+            console.error('parameterInputs container not found');
+            return;
+        }
+        
+        console.log('Generating parameter inputs for:', selectedOperationName);
         container.innerHTML = '';
         
-        if (selectedOperationName.toLowerCase().includes('cut')) {
+        if (selectedOperationName && selectedOperationName.toLowerCase().includes('cut')) {
             container.innerHTML = `
                 <div class="mb-3">
                     <label class="form-label">Number of pieces to cut into:</label>
