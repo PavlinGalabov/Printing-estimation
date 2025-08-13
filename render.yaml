@@ -1,0 +1,22 @@
+databases:
+  - name: printestimation-db
+    databaseName: printing_estimation
+    user: printing_user
+
+services:
+  - type: web
+    name: printestimation-web
+    runtime: python3
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn PrintEstimation.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: printestimation-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: "*"
