@@ -95,7 +95,7 @@ WSGI_APPLICATION = 'PrintEstimation.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=config('DATABASE_URL', default=f'postgresql://{config("DB_USER", default="postgres")}:{config("DB_PASSWORD", default="")}@{config("DB_HOST", default="localhost")}:{config("DB_PORT", default="5432")}/{config("DB_NAME", default="printing_estimation")}')
+        default=config('DATABASE_URL', default='postgresql://postgres:password@localhost:5432/printing_estimation')
     )
 }
 
