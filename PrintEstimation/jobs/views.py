@@ -481,7 +481,9 @@ class JobUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     
 
     def get_queryset(self):
-        # Staff can edit all jobs, regular users only their own
+        # Consistent permission logic:
+        # - Staff users: Can edit all jobs
+        # - Regular users: Can only edit their own jobs
         if self.request.user.is_staff_user():
             return Job.objects.all()
         else:
@@ -525,8 +527,9 @@ class JobDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     success_url = reverse_lazy('jobs:list')
 
     def get_queryset(self):
-        # Only superusers can delete jobs, staff cannot
-        if self.request.user.is_superuser:
+        # Use consistent permission logic with edit view
+        # Staff can delete all jobs, regular users only their own
+        if self.request.user.is_staff_user():
             return Job.objects.all()
         else:
             return Job.objects.filter(created_by=self.request.user)
