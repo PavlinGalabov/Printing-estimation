@@ -344,7 +344,7 @@ class PrintingCalculator:
                 }
             
             # Reset calculation state
-            self.current_quantity = self.job.sheets_to_buy
+            self.current_quantity = self.job.print_run  # Use print_run like in main calculation
             self.total_cost = Decimal('0')
             self.total_time = 0
             self.operations_data = []
