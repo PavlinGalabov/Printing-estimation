@@ -1,0 +1,53 @@
+/**
+ * Base CSS for Print Estimation System
+ * Main site-wide styles and layout
+ */
+
+/* Layout and Typography */
+.navbar-brand {
+    font-weight: bold;
+}
+
+.footer {
+    background-color: #f8f9fa;
+    padding: 20px 0;
+    margin-top: auto;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
+
+/* Components */
+.status-badge {
+    font-size: 0.75rem;
+}
+
+.calculation-card {
+    border-left: 4px solid #007bff;
+}
+
+.operation-step {
+    border-left: 3px solid #dee2e6;
+    padding-left: 15px;
+    margin-bottom: 15px;
+}
+
+.operation-step.active {
+    border-left-color: #007bff;
+}
+
+/* Fix dropdown z-index to appear above other elements */
+.dropdown-menu {
+    z-index: 9999 !important;
+}
+
+.btn-group .dropdown-menu {
+    z-index: 9999 !important;
+}

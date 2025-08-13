@@ -1,0 +1,249 @@
+/**
+ * Print CSS for Print Estimation System
+ * PDF export and print-specific styles
+ */
+
+/* Print media queries */
+@media print {
+    .no-print { 
+        display: none !important; 
+    }
+    
+    body { 
+        margin: 0; 
+        font-size: 12px; 
+    }
+    
+    .page-break { 
+        page-break-before: always; 
+    }
+    
+    .card { 
+        break-inside: avoid; 
+    }
+    
+    /* Ensure colors print correctly */
+    .bg-primary, .metric-card.bg-primary {
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+    
+    .bg-info, .metric-card.bg-info {
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+    
+    .bg-success, .metric-card.bg-success {
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+    
+    .bg-warning, .metric-card.bg-warning {
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+}
+
+/* PDF Export container */
+.print-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    background: white;
+    min-height: 100vh;
+}
+
+/* PDF Headers */
+.header-section {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.header-section.urgent {
+    background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+}
+
+.header-section h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.header-section .subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* Job info cards for PDF */
+.job-info-card {
+    background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.job-info-card.urgent {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+}
+
+/* Info grid for PDF layouts */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.info-label {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Checklist items for job sheets */
+.checklist-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.checklist-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #007bff;
+    border-radius: 4px;
+    margin-right: 1rem;
+    background: white;
+    flex-shrink: 0;
+}
+
+/* Operation details */
+.operation-details {
+    flex: 1;
+}
+
+.operation-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.operation-meta {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* Notes section for job sheets */
+.notes-section {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+    color: #333;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    margin-top: 2rem;
+}
+
+.notes-lines {
+    margin-top: 1rem;
+}
+
+.notes-line {
+    border-bottom: 1px solid #333;
+    height: 25px;
+    margin-bottom: 8px;
+}
+
+/* Signature areas */
+.signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.signature-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.signature-line {
+    border-bottom: 2px solid #333;
+    height: 30px;
+}
+
+/* Footer for PDFs */
+.footer-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-top: 2rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+/* Print button */
+.print-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Info tables for PDFs */
+.info-table td {
+    padding: 0.5rem 0;
+    border: none;
+}
+
+.info-table td:first-child {
+    font-weight: 600;
+    color: #495057;
+    width: 40%;
+}
+
+/* Operations table styling */
+.operations-table {
+    margin-bottom: 0;
+}
+
+.operations-table th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+.operations-table td {
+    vertical-align: middle;
+}

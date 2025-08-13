@@ -1,0 +1,106 @@
+/**
+ * Jobs CSS for Print Estimation System
+ * Job-specific styles and components
+ */
+
+/* Common job styles */
+.operation-item {
+    border-left: 4px solid #dee2e6;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.operation-item:hover {
+    border-left-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.operation-item.calculated {
+    border-left-color: #28a745;
+}
+
+/* Calculate mode specific styles */
+.sortable-operations {
+    min-height: 100px;
+}
+
+.drag-handle {
+    cursor: grab;
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+.operation-item:hover .drag-handle {
+    opacity: 1;
+}
+
+.operation-item.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+}
+
+.calculation-result {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.add-operation-btn {
+    border: 2px dashed #dee2e6;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.add-operation-btn:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+/* Job status badges */
+.status-draft { background-color: #6c757d; }
+.status-calculated { background-color: #17a2b8; }
+.status-waiting-manager { background-color: #ffc107; color: #333; }
+.status-waiting-client { background-color: #007bff; }
+.status-approved { background-color: #28a745; }
+.status-urgent { background-color: #dc3545; }
+.status-finished { background-color: #343a40; }
+.status-rejected { background-color: #dc3545; }
+
+/* Job dashboard cards */
+.job-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #dee2e6;
+}
+
+.job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Cost summary metrics */
+.metric-card {
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    text-align: center;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.metric-card h3, .metric-card h4 {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.metric-card small {
+    opacity: 0.9;
+}
+
+/* Operation sequence badges */
+.sequence-badge {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}

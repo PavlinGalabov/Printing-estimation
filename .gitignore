@@ -152,8 +152,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Static files collection
-/static/
+# Static files collection (exclude collected files, keep source files)
+/staticfiles/
 /media/
 
 # Database
